@@ -1,0 +1,19 @@
+# Sayso — 10-slide deck outline
+
+Palette: bg #09090B · surface #16161A · text #F4F4F5 · muted #A1A1AA · lime #C8FF3D · violet #8B7CFF · amber #FFB020 · red #FF5C5C.
+Fonts: Inter Tight (or Inter / Helvetica fallback) for UI text, JetBrains Mono for commands.
+
+| # | Title | Content | Visual |
+|---|---|---|---|
+| 1 | **Sayso** — *Your terminal, on your say-so.* | A voice-native developer agent that runs your terminal, browser and GitHub — at conversation speed, in a voice that listens to how you feel. AGI House SF · Voice AI Hackathon · Sept 19 2026 · SambaNova × Hume × Pipecat | banner.png / orb + wordmark |
+| 2 | **Voice agents talk. They don't do.** | Three pains: **Dead air** (you speak, then wait) · **Flat voice** (same tone whether you're thrilled or furious) · **Toy demos** (they narrate; they don't act). Developers live in three windows — terminal, browser, GitHub — and switch hundreds of times a day. | 3 pain tiles + "3 windows" glyph |
+| 3 | **One conversation. Real actions.** | Sayso collapses the windows into one voice loop. Track 2: software you operate entirely by speaking (terminal → browser). Track 1: an agent that *acts* (files real GitHub issues). Built today on SambaNova inference, Hume voice + emotion, Pipecat orchestration. | product screenshot (screenshot-app.png) |
+| 4 | **Live demo** | The 7-beat script: 1 "Create a web app called pulse… run it on port 8000" → 3 tool calls, HUD shows TTFT/tok/s · 2 "Open it in the browser" · 3 (annoyed) "Ugh, the clock is tiny — make it huge and neon" → emotion badge + softer voice · 4 "Run the tests" → streaming failure · 5 "Fix it" → green · 6 "File a GitHub issue to add dark mode" → real issue · 7 "Delete the pulse folder" → say-so gate → "yes" | numbered beats, terminal/browser screenshot |
+| 5 | **Architecture** | One Pipecat pipeline: SmallWebRTC in → RTVI → **Hume Emotion** → STT (Gradium / Whisper) → Context → **SambaNova LLM** (function calling) → Stats → **Hume Octave TTS** → SmallWebRTC out. Toolbox: shell · processes · files · browser · GitHub, behind the **say-so gate**. Every tool streams RTVI events → the screen is the audit log. | architecture.png |
+| 6 | **Why silicon speed matters** | A tool-heavy turn = hundreds of tokens of JSON (3 tool calls ≈ 300–600 tokens). At hundreds of tok/s → sub-second; at 30 tok/s → 10–20 s of dead air. Sayso shows TTFT, tok/s, STT and TTS latency live in the HUD. Models: Meta-Llama-3.3-70B (default), DeepSeek-V3.1, gpt-oss-120b, gemma-4-31B (General Compute). | HUD close-up screenshot + simple bar comparing 30 vs 800 tok/s turn time (illustrative math, labelled) |
+| 7 | **A voice that listens** | Hume prosody → 48 emotions → 8 moods → two levers: (1) Octave *acting instructions* ("calm, warm, reassuring" / "upbeat, bright, energetic"), (2) a tone note in the LLM context so the *words* adapt too. Same request, different delivery. | mood → style table, orb colours |
+| 8 | **Safe enough to give root** | Every command classified before it runs (rm -rf, sudo, force push, kill, disk ops, curl\|sh, paths outside the sandbox). Destructive → **say-so card**; approve by click or by voice. Sandboxed `workspace/`. Streaming transparency: nothing happens off-screen. | say-so card screenshot |
+| 9 | **Built today** | 12 tools · Pipecat 1.11 · React 19 UI · keyless demo mode (rule-based local brain + browser speech) · `?mock=1` replay · pre-flight key checker · MIT. `github.com/vnmoorthy/sayso` | stack table + repo link/QR |
+| 10 | **What's next** | Phone-in via Twilio → call your dev box · **Unitree Go2**: same brain, four legs ("Sayso, fetch.") · multi-agent dispatch (voice → parallel coding agents) · Pipecat Cloud deploy · VS Code extension. Thanks: SambaNova · Hume · General Compute · Infinity · Pipecat/Daily · Gradium · AGI House. | roadmap timeline |
+
+Speaker notes: see `../DEMO_STORYBOARD.md`.

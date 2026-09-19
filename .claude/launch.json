@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sayso-server",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-lc", "cd server && SAYSO_WHISPER_MODEL=mlx-community/whisper-tiny uv run bot.py"],
+      "port": 7860
+    },
+    {
+      "name": "sayso-web",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-lc", "cd web && npm run dev -- --port 5173"],
+      "port": 5173
+    }
+  ]
+}

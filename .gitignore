@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.uv-cache/
+
+# builds
+web/dist/
+*.egg-info/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# the agent's sandbox (keep the folder, not its contents)
+workspace/*
+!workspace/.gitkeep
+
+# os / editors
+.DS_Store
+.idea/
+.vscode/
+*.log
