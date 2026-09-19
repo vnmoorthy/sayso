@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title>Sayso — your terminal, on your say-so</title>
+  <defs>
+    <radialGradient id="bgGlow" cx="0.27" cy="0.5" r="0.62">
+      <stop offset="0" stop-color="#C8FF3D" stop-opacity="0.13"/>
+      <stop offset="0.55" stop-color="#C8FF3D" stop-opacity="0.035"/>
+      <stop offset="1" stop-color="#C8FF3D" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bgGlow2" cx="0.92" cy="0.95" r="0.45">
+      <stop offset="0" stop-color="#8B7CFF" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#8B7CFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbFill" cx="0.38" cy="0.34" r="0.78">
+      <stop offset="0" stop-color="#F4FFD0"/>
+      <stop offset="0.28" stop-color="#D9FF6E"/>
+      <stop offset="0.6" stop-color="#A6DB2A"/>
+      <stop offset="0.86" stop-color="#4E7A0B"/>
+      <stop offset="1" stop-color="#20340A"/>
+    </radialGradient>
+    <radialGradient id="orbHalo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#C8FF3D" stop-opacity="0.55"/>
+      <stop offset="0.5" stop-color="#C8FF3D" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#C8FF3D" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softBlur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+    <filter id="tightBlur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+    <filter id="textGlow" x="-20%" y="-40%" width="140%" height="180%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+
+  <!-- background -->
+  <rect width="1280" height="640" fill="#09090B"/>
+  <rect width="1280" height="640" fill="url(#bgGlow)"/>
+  <rect width="1280" height="640" fill="url(#bgGlow2)"/>
+
+  <!-- orb -->
+  <g transform="translate(300 320)">
+    <!-- pulse rings (audio) -->
+    <circle r="252" fill="none" stroke="#C8FF3D" stroke-opacity="0.06" stroke-width="1.5"/>
+    <circle r="214" fill="none" stroke="#C8FF3D" stroke-opacity="0.12" stroke-width="1.5"/>
+    <circle r="180" fill="none" stroke="#C8FF3D" stroke-opacity="0.22" stroke-width="2"/>
+    <!-- halo -->
+    <circle r="196" fill="url(#orbHalo)"/>
+    <circle r="150" fill="#C8FF3D" fill-opacity="0.35" filter="url(#softBlur)"/>
+    <!-- core -->
+    <circle r="122" fill="url(#orbFill)"/>
+    <!-- rim light -->
+    <circle r="122" fill="none" stroke="#EAFFAA" stroke-opacity="0.35" stroke-width="1.5"/>
+    <!-- specular highlight -->
+    <ellipse cx="-38" cy="-52" rx="46" ry="30" fill="#FFFFFF" fill-opacity="0.45" filter="url(#tightBlur)"/>
+    <!-- soft inner waveform -->
+    <g stroke="#0E1A02" stroke-opacity="0.55" stroke-width="5" stroke-linecap="round">
+      <line x1="-48" y1="-14" x2="-48" y2="14"/>
+      <line x1="-28" y1="-30" x2="-28" y2="30"/>
+      <line x1="-8" y1="-18" x2="-8" y2="18"/>
+      <line x1="12" y1="-40" x2="12" y2="40"/>
+      <line x1="32" y1="-22" x2="32" y2="22"/>
+      <line x1="52" y1="-10" x2="52" y2="10"/>
+    </g>
+  </g>
+
+  <!-- wordmark -->
+  <text x="516" y="352" font-size="176" font-weight="800" letter-spacing="-9" fill="#C8FF3D" fill-opacity="0.18" filter="url(#textGlow)">sayso.</text>
+  <text x="516" y="352" font-size="176" font-weight="800" letter-spacing="-9" fill="#F4F4F5">sayso<tspan fill="#C8FF3D">.</tspan></text>
+
+  <!-- tagline -->
+  <text x="524" y="414" font-size="34" font-weight="500" letter-spacing="-0.3" fill="#A1A1AA">Your terminal, on your say-so.</text>
+
+  <!-- pills -->
+  <g font-size="20" font-weight="600" fill="#E4E4E7" text-anchor="middle">
+    <g>
+      <rect x="524" y="460" width="266" height="46" rx="23" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+      <circle cx="551" cy="483" r="5" fill="#C8FF3D"/>
+      <text x="665" y="490">SambaNova inference</text>
+    </g>
+    <g>
+      <rect x="804" y="460" width="164" height="46" rx="23" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+      <circle cx="831" cy="483" r="5" fill="#C8FF3D"/>
+      <text x="894" y="490">Hume voice</text>
+    </g>
+    <g>
+      <rect x="982" y="460" width="228" height="46" rx="23" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+      <circle cx="1009" cy="483" r="5" fill="#8B7CFF"/>
+      <text x="1104" y="490">Pipecat pipeline</text>
+    </g>
+  </g>
+
+  <!-- footer -->
+  <text x="524" y="592" font-size="16" font-weight="500" fill="#52525B" letter-spacing="0.2">github.com/vnmoorthy/sayso</text>
+  <text x="1236" y="592" font-size="16" font-weight="500" fill="#52525B" text-anchor="end" letter-spacing="0.2">AGI House SF · Voice AI Hackathon 2026</text>
+</svg>

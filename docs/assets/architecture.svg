@@ -1,0 +1,259 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title>Sayso architecture — one voice turn, end to end</title>
+  <defs>
+    <marker id="arrowLime" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 0.8 L10 5 L0 9.2 Z" fill="#C8FF3D"/>
+    </marker>
+    <marker id="arrowViolet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 0.8 L10 5 L0 9.2 Z" fill="#8B7CFF"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 0.8 L10 5 L0 9.2 Z" fill="#FFB020"/>
+    </marker>
+    <radialGradient id="glow" cx="0.5" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#C8FF3D" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#C8FF3D" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- background -->
+  <rect width="1600" height="900" fill="#09090B"/>
+  <rect width="1600" height="900" fill="url(#glow)"/>
+
+  <!-- header -->
+  <text x="40" y="52" font-size="30" letter-spacing="-1.2"><tspan font-weight="800" fill="#F4F4F5">sayso</tspan><tspan font-weight="800" fill="#C8FF3D">.</tspan><tspan dx="16" font-size="20" font-weight="500" letter-spacing="-0.2" fill="#A1A1AA">Architecture — one voice turn, end to end</tspan></text>
+
+  <!-- legend -->
+  <g font-size="13.5" font-weight="500" fill="#A1A1AA">
+    <line x1="1000" y1="47" x2="1032" y2="47" stroke="#C8FF3D" stroke-width="2.5" marker-end="url(#arrowLime)"/>
+    <text x="1042" y="52">audio &amp; control flow</text>
+    <line x1="1218" y1="47" x2="1250" y2="47" stroke="#8B7CFF" stroke-width="2" stroke-dasharray="6 5"/>
+    <text x="1260" y="52">RTVI messages</text>
+    <rect x="1392" y="39" width="30" height="16" rx="5" fill="none" stroke="#FFB020" stroke-width="1.8"/>
+    <text x="1432" y="52">needs your say-so</text>
+  </g>
+
+  <!-- ========================= Browser node ========================= -->
+  <rect x="40" y="110" width="250" height="690" rx="18" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+  <text x="64" y="150" font-size="20" font-weight="700" fill="#F4F4F5">Browser</text>
+  <text x="64" y="172" font-size="12.5" fill="#A1A1AA">React 19 · Vite · Tailwind v4</text>
+  <text x="64" y="190" font-size="12.5" fill="#A1A1AA">@pipecat-ai/client-js · SmallWebRTC</text>
+
+  <!-- microphone -->
+  <g transform="translate(80 230)">
+    <circle r="17" fill="#C8FF3D"/>
+    <rect x="-4.5" y="-10" width="9" height="14" rx="4.5" fill="#09090B"/>
+    <path d="M-8 -1 a8 8 0 0 0 16 0" fill="none" stroke="#09090B" stroke-width="2"/>
+    <line x1="0" y1="7" x2="0" y2="11" stroke="#09090B" stroke-width="2"/>
+  </g>
+  <text x="108" y="226" font-size="15" font-weight="600" fill="#F4F4F5">Microphone</text>
+  <text x="108" y="244" font-size="12" fill="#A1A1AA">16 kHz PCM over WebRTC</text>
+
+  <!-- ui parts (listening side) -->
+  <g font-size="14" font-weight="600" fill="#F4F4F5">
+    <circle cx="70" cy="296" r="3" fill="#C8FF3D"/>
+    <text x="84" y="300">Voice orb</text>
+    <text x="84" y="317" font-size="12" font-weight="400" fill="#A1A1AA">pulses with audio · hue = mood</text>
+    <circle cx="70" cy="340" r="3" fill="#C8FF3D"/>
+    <text x="84" y="344">Live transcript</text>
+    <text x="84" y="361" font-size="12" font-weight="400" fill="#A1A1AA">with emotion badges</text>
+    <circle cx="70" cy="384" r="3" fill="#C8FF3D"/>
+    <text x="84" y="388">Latency HUD</text>
+    <text x="84" y="405" font-size="12" font-weight="400" fill="#A1A1AA">STT · TTFT · tok/s · TTS</text>
+  </g>
+
+  <!-- speaker -->
+  <g transform="translate(80 440)">
+    <circle r="17" fill="#C8FF3D"/>
+    <path d="M-9 -4 h5 l6 -5 v18 l-6 -5 h-5 z" fill="#09090B"/>
+    <path d="M6 -5 a7 7 0 0 1 0 10" fill="none" stroke="#09090B" stroke-width="2"/>
+  </g>
+  <text x="108" y="436" font-size="15" font-weight="600" fill="#F4F4F5">Speaker</text>
+  <text x="108" y="454" font-size="12" fill="#A1A1AA">Hume Octave voice</text>
+
+  <!-- ui parts (acting side) -->
+  <g font-size="14" font-weight="600" fill="#F4F4F5">
+    <circle cx="70" cy="506" r="3" fill="#C8FF3D"/>
+    <text x="84" y="510">Workbench</text>
+    <text x="84" y="527" font-size="12" font-weight="400" fill="#A1A1AA">Terminal · Browser · Files</text>
+    <circle cx="70" cy="550" r="3" fill="#C8FF3D"/>
+    <text x="84" y="554">Actions rail</text>
+    <text x="84" y="571" font-size="12" font-weight="400" fill="#A1A1AA">every tool call, output live</text>
+    <circle cx="70" cy="594" r="3" fill="#FFB020"/>
+    <text x="84" y="598">Say-so card</text>
+    <text x="84" y="615" font-size="12" font-weight="400" fill="#A1A1AA">approve / deny held commands</text>
+    <circle cx="70" cy="638" r="3" fill="#C8FF3D"/>
+    <text x="84" y="642">Settings</text>
+    <text x="84" y="659" font-size="12" font-weight="400" fill="#A1A1AA">model · Hume voice · server URL</text>
+  </g>
+  <text x="64" y="778" font-size="11.5" fill="#52525B">?mock=1 replays a scripted session</text>
+
+  <!-- ========================= Pipecat pipeline ========================= -->
+  <rect x="350" y="110" width="1210" height="390" rx="20" fill="#0E0E12" stroke="#8B7CFF" stroke-opacity="0.85" stroke-width="1.5"/>
+  <text x="376" y="146" font-size="19" font-weight="700" fill="#8B7CFF">Pipecat pipeline<tspan dx="12" font-size="13" font-weight="500" fill="#A1A1AA">v1.11</tspan></text>
+  <text x="1534" y="146" font-size="13" font-weight="500" fill="#A1A1AA" text-anchor="end">SmallWebRTC transport · Silero VAD · smart-turn v3 · RTVI · server/bot.py</text>
+
+  <!-- top row chips -->
+  <g>
+    <!-- 01 SmallWebRTC in -->
+    <rect x="380" y="190" width="160" height="80" rx="14" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+    <text x="530" y="205" font-size="10.5" font-weight="600" fill="#8B7CFF" text-anchor="end">01</text>
+    <text x="460" y="222" font-size="17" font-weight="700" fill="#F4F4F5" text-anchor="middle">SmallWebRTC</text>
+    <text x="460" y="244" font-size="12.5" fill="#A1A1AA" text-anchor="middle">audio in</text>
+    <text x="460" y="260" font-size="12.5" fill="#A1A1AA" text-anchor="middle">16 kHz mono</text>
+
+    <!-- 02 RTVI -->
+    <rect x="578" y="190" width="160" height="80" rx="14" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+    <text x="728" y="205" font-size="10.5" font-weight="600" fill="#8B7CFF" text-anchor="end">02</text>
+    <text x="658" y="222" font-size="17" font-weight="700" fill="#F4F4F5" text-anchor="middle">RTVI</text>
+    <text x="658" y="244" font-size="12.5" fill="#A1A1AA" text-anchor="middle">protocol · events</text>
+    <text x="658" y="260" font-size="12.5" fill="#A1A1AA" text-anchor="middle">RTVIProcessor</text>
+
+    <!-- 03 Hume Emotion -->
+    <rect x="776" y="190" width="160" height="80" rx="14" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+    <text x="926" y="205" font-size="10.5" font-weight="600" fill="#8B7CFF" text-anchor="end">03</text>
+    <text x="856" y="222" font-size="17" font-weight="700" fill="#F4F4F5" text-anchor="middle">Hume Emotion</text>
+    <text x="856" y="244" font-size="12.5" fill="#A1A1AA" text-anchor="middle">prosody → mood</text>
+    <text x="856" y="260" font-size="12.5" fill="#A1A1AA" text-anchor="middle">≤ 5 s of speech</text>
+
+    <!-- 04 STT -->
+    <rect x="974" y="190" width="160" height="80" rx="14" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+    <text x="1124" y="205" font-size="10.5" font-weight="600" fill="#8B7CFF" text-anchor="end">04</text>
+    <text x="1054" y="222" font-size="17" font-weight="700" fill="#F4F4F5" text-anchor="middle">STT</text>
+    <text x="1054" y="244" font-size="12.5" fill="#A1A1AA" text-anchor="middle">Gradium · Deepgram</text>
+    <text x="1054" y="260" font-size="12.5" fill="#A1A1AA" text-anchor="middle">Whisper (local)</text>
+
+    <!-- 05 Context -->
+    <rect x="1172" y="190" width="160" height="80" rx="14" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+    <text x="1322" y="205" font-size="10.5" font-weight="600" fill="#8B7CFF" text-anchor="end">05</text>
+    <text x="1252" y="222" font-size="17" font-weight="700" fill="#F4F4F5" text-anchor="middle">Context</text>
+    <text x="1252" y="244" font-size="12.5" fill="#A1A1AA" text-anchor="middle">messages + tools</text>
+    <text x="1252" y="260" font-size="12.5" fill="#A1A1AA" text-anchor="middle">LLMContext</text>
+
+    <!-- 06 SambaNova LLM (tall) -->
+    <rect x="1370" y="190" width="160" height="290" rx="14" fill="#141A0A" stroke="#C8FF3D" stroke-opacity="0.9" stroke-width="1.5"/>
+    <text x="1520" y="205" font-size="10.5" font-weight="600" fill="#8B7CFF" text-anchor="end">06</text>
+    <text x="1450" y="224" font-size="17" font-weight="700" fill="#F4F4F5" text-anchor="middle">SambaNova LLM</text>
+    <text x="1450" y="246" font-size="12.5" fill="#C8FF3D" text-anchor="middle">function calling</text>
+    <line x1="1390" y1="262" x2="1510" y2="262" stroke="#2A2A30" stroke-width="1"/>
+    <text x="1450" y="286" font-size="12.5" font-weight="600" fill="#E4E4E7" text-anchor="middle">Meta-Llama-3.3-70B</text>
+    <text x="1450" y="304" font-size="11.5" fill="#A1A1AA" text-anchor="middle">DeepSeek-V3.1</text>
+    <text x="1450" y="320" font-size="11.5" fill="#A1A1AA" text-anchor="middle">gpt-oss-120b</text>
+    <text x="1450" y="336" font-size="11.5" fill="#A1A1AA" text-anchor="middle">MiniMax-M2.7</text>
+    <line x1="1390" y1="352" x2="1510" y2="352" stroke="#2A2A30" stroke-width="1"/>
+    <text x="1450" y="372" font-size="11.5" fill="#A1A1AA" text-anchor="middle">or General Compute</text>
+    <text x="1450" y="388" font-size="11.5" fill="#A1A1AA" text-anchor="middle">gemma-4-31B-it</text>
+    <text x="1450" y="466" font-size="12" font-weight="600" fill="#C8FF3D" text-anchor="middle">RDU inference · tool loop</text>
+  </g>
+
+  <!-- bottom row chips -->
+  <g>
+    <!-- 07 Stats -->
+    <rect x="1000" y="400" width="160" height="80" rx="14" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+    <text x="1150" y="415" font-size="10.5" font-weight="600" fill="#8B7CFF" text-anchor="end">07</text>
+    <text x="1080" y="432" font-size="17" font-weight="700" fill="#F4F4F5" text-anchor="middle">Stats</text>
+    <text x="1080" y="454" font-size="12.5" fill="#A1A1AA" text-anchor="middle">TTFT · tokens/s</text>
+    <text x="1080" y="470" font-size="12.5" fill="#A1A1AA" text-anchor="middle">→ llm_stats</text>
+
+    <!-- 08 Hume Octave TTS -->
+    <rect x="700" y="400" width="160" height="80" rx="14" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+    <text x="850" y="415" font-size="10.5" font-weight="600" fill="#8B7CFF" text-anchor="end">08</text>
+    <text x="780" y="432" font-size="16" font-weight="700" fill="#F4F4F5" text-anchor="middle">Hume Octave TTS</text>
+    <text x="780" y="454" font-size="12.5" fill="#A1A1AA" text-anchor="middle">acting instructions</text>
+    <text x="780" y="470" font-size="12.5" fill="#A1A1AA" text-anchor="middle">retuned by mood</text>
+
+    <!-- 09 SmallWebRTC out -->
+    <rect x="380" y="400" width="160" height="80" rx="14" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+    <text x="530" y="415" font-size="10.5" font-weight="600" fill="#8B7CFF" text-anchor="end">09</text>
+    <text x="460" y="432" font-size="17" font-weight="700" fill="#F4F4F5" text-anchor="middle">SmallWebRTC</text>
+    <text x="460" y="454" font-size="12.5" fill="#A1A1AA" text-anchor="middle">audio out</text>
+    <text x="460" y="470" font-size="12.5" fill="#A1A1AA" text-anchor="middle">to speaker</text>
+  </g>
+
+  <!-- pipeline flow arrows -->
+  <g stroke="#C8FF3D" stroke-width="2.2" fill="none" marker-end="url(#arrowLime)">
+    <line x1="292" y1="230" x2="378" y2="230"/>
+    <line x1="542" y1="230" x2="576" y2="230"/>
+    <line x1="740" y1="230" x2="774" y2="230"/>
+    <line x1="938" y1="230" x2="972" y2="230"/>
+    <line x1="1136" y1="230" x2="1170" y2="230"/>
+    <line x1="1334" y1="230" x2="1368" y2="230"/>
+    <line x1="1368" y1="440" x2="1162" y2="440"/>
+    <line x1="998" y1="440" x2="862" y2="440"/>
+    <line x1="698" y1="440" x2="542" y2="440"/>
+    <line x1="378" y1="440" x2="292" y2="440"/>
+  </g>
+  <text x="335" y="220" font-size="11" font-weight="600" fill="#C8FF3D" text-anchor="middle">WebRTC</text>
+  <text x="335" y="460" font-size="11" font-weight="600" fill="#C8FF3D" text-anchor="middle">WebRTC</text>
+  <text x="1264" y="430" font-size="11.5" fill="#A1A1AA" text-anchor="middle">streamed tokens</text>
+  <text x="930" y="430" font-size="11.5" fill="#A1A1AA" text-anchor="middle">sentences</text>
+  <text x="620" y="430" font-size="11.5" fill="#A1A1AA" text-anchor="middle">speech</text>
+
+  <!-- mood → acting instructions -->
+  <line x1="836" y1="272" x2="796" y2="398" stroke="#C8FF3D" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrowLime)"/>
+  <text x="838" y="318" font-size="12.5" font-weight="600" fill="#C8FF3D">mood → acting instructions</text>
+  <text x="838" y="335" font-size="11.5" fill="#A1A1AA">TTSUpdateSettingsFrame(description)</text>
+  <text x="838" y="352" font-size="11.5" fill="#A1A1AA">+ tone note appended to the LLM context</text>
+
+  <!-- ========================= Say-so gate ========================= -->
+  <line x1="1450" y1="482" x2="1450" y2="522" stroke="#C8FF3D" stroke-width="2.2" marker-end="url(#arrowLime)"/>
+  <text x="1462" y="506" font-size="12" font-weight="600" fill="#C8FF3D">tool calls</text>
+  <rect x="1330" y="524" width="240" height="56" rx="12" fill="#1C1608" stroke="#FFB020" stroke-width="1.6"/>
+  <text x="1450" y="547" font-size="15" font-weight="700" fill="#FFB020" text-anchor="middle">Say-so gate</text>
+  <text x="1450" y="567" font-size="11.5" fill="#E4E4E7" text-anchor="middle">safety classifier · destructive? → ask first</text>
+  <line x1="1450" y1="582" x2="1450" y2="604" stroke="#FFB020" stroke-width="2.2" marker-end="url(#arrowAmber)"/>
+  <text x="1462" y="598" font-size="12" font-weight="600" fill="#FFB020">safe or approved</text>
+
+  <!-- ========================= Toolbox ========================= -->
+  <rect x="1160" y="606" width="400" height="204" rx="16" fill="#16161A" stroke="#2A2A30" stroke-width="1.5"/>
+  <text x="1184" y="636" font-size="17" font-weight="700" fill="#F4F4F5">Toolbox</text>
+  <text x="1536" y="636" font-size="12" fill="#A1A1AA" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">sayso/tools.py</text>
+  <g font-weight="700" font-size="13.5" fill="#F4F4F5">
+    <rect x="1184" y="648" width="176" height="44" rx="10" fill="#0E0E12" stroke="#2A2A30"/>
+    <text x="1196" y="666">Shell</text>
+    <text x="1196" y="681" font-size="10.5" font-weight="400" fill="#A1A1AA">run_shell · streamed output</text>
+    <rect x="1374" y="648" width="176" height="44" rx="10" fill="#0E0E12" stroke="#2A2A30"/>
+    <text x="1386" y="666">Processes</text>
+    <text x="1386" y="681" font-size="10.5" font-weight="400" fill="#A1A1AA">start/stop_background · port</text>
+    <rect x="1184" y="700" width="176" height="44" rx="10" fill="#0E0E12" stroke="#2A2A30"/>
+    <text x="1196" y="718">Files</text>
+    <text x="1196" y="733" font-size="10.5" font-weight="400" fill="#A1A1AA">write · read · list_files</text>
+    <rect x="1374" y="700" width="176" height="44" rx="10" fill="#0E0E12" stroke="#2A2A30"/>
+    <text x="1386" y="718">Browser</text>
+    <text x="1386" y="733" font-size="10.5" font-weight="400" fill="#A1A1AA">open_url (panel) · fetch_url</text>
+    <rect x="1184" y="752" width="176" height="44" rx="10" fill="#0E0E12" stroke="#2A2A30"/>
+    <text x="1196" y="770">GitHub</text>
+    <text x="1196" y="785" font-size="10.5" font-weight="400" fill="#A1A1AA">create_issue · repo_info</text>
+    <rect x="1374" y="752" width="176" height="44" rx="10" fill="#0E0E12" stroke="#FFB020" stroke-opacity="0.6"/>
+    <text x="1386" y="770">Say-so</text>
+    <text x="1386" y="785" font-size="10.5" font-weight="400" fill="#A1A1AA">resolve_confirmation · reset</text>
+  </g>
+
+  <!-- sandbox + GitHub nodes -->
+  <line x1="1255" y1="812" x2="1255" y2="830" stroke="#C8FF3D" stroke-width="2" marker-end="url(#arrowLime)"/>
+  <rect x="1160" y="832" width="190" height="52" rx="12" fill="#0E0E12" stroke="#2A2A30" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="1255" y="854" font-size="13.5" font-weight="700" fill="#F4F4F5" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">workspace/ sandbox</text>
+  <text x="1255" y="871" font-size="10.5" fill="#A1A1AA" text-anchor="middle">every command runs in here</text>
+
+  <line x1="1465" y1="812" x2="1465" y2="830" stroke="#C8FF3D" stroke-width="2" marker-end="url(#arrowLime)"/>
+  <rect x="1370" y="832" width="190" height="52" rx="12" fill="#0E0E12" stroke="#2A2A30" stroke-width="1.5"/>
+  <text x="1465" y="854" font-size="13.5" font-weight="700" fill="#F4F4F5" text-anchor="middle">GitHub (gh CLI)</text>
+  <text x="1465" y="871" font-size="10.5" fill="#A1A1AA" text-anchor="middle">real issues · authenticated</text>
+
+  <!-- ========================= RTVI server messages (dashed) ========================= -->
+  <!-- bus: toolbox → browser, bidirectional -->
+  <line x1="1158" y1="700" x2="294" y2="700" stroke="#8B7CFF" stroke-width="1.8" stroke-dasharray="7 6" marker-end="url(#arrowViolet)" marker-start="url(#arrowViolet)"/>
+  <!-- stats tap -->
+  <line x1="1080" y1="482" x2="1080" y2="700" stroke="#8B7CFF" stroke-width="1.8" stroke-dasharray="7 6"/>
+  <circle cx="1080" cy="700" r="4" fill="#8B7CFF"/>
+  <!-- emotion tap: up and over -->
+  <path d="M856 188 V88 H165 V108" fill="none" stroke="#8B7CFF" stroke-width="1.8" stroke-dasharray="7 6" marker-end="url(#arrowViolet)"/>
+  <text x="520" y="82" font-size="12" font-weight="600" fill="#8B7CFF">emotion → orb hue · transcript badge · voice_style</text>
+
+  <g font-size="11.5" fill="#A1A1AA">
+    <text x="310" y="668" font-size="13" font-weight="700" fill="#8B7CFF">RTVI server messages → UI</text>
+    <text x="310" y="686">tool_call · tool_output · tool_result · confirm_request · confirm_resolved · emotion · llm_stats</text>
+    <text x="310" y="720">open_url · file_changed · github_event · process · workspace · notice · status</text>
+    <text x="310" y="740" fill="#8B7CFF" font-weight="600">← client messages:<tspan fill="#A1A1AA" font-weight="400"> confirm (approve / deny) · set_model · set_voice · stop_all · reset_workspace</tspan></text>
+  </g>
+</svg>
