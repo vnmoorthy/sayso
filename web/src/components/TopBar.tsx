@@ -123,7 +123,9 @@ export function TopBar({
       ? 'Hume voice'
       : status.tts === 'browser'
         ? 'Browser voice'
-        : `${status.tts} voice`
+        : status.tts === 'kokoro'
+          ? 'Kokoro voice · local'
+          : `${status.tts} voice`
     : 'Hume voice';
   const demo = status?.mode === 'demo';
 

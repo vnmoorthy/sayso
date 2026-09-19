@@ -16,6 +16,20 @@ import { Toasts } from './components/Toasts';
 
 type MobileView = 'voice' | 'work' | 'actions';
 
+/** Prefer a natural-sounding local voice for the browser speech fallback. */
+function pickBrowserVoice(): SpeechSynthesisVoice | null {
+  if (typeof speechSynthesis === 'undefined') return null;
+  const voices = speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  const en = voices.filter((v) => /^en[-_]/i.test(v.lang));
+  const prefer = ['Google US English', 'Samantha', 'Ava', 'Zoe', 'Allison', 'Karen', 'Daniel', 'Moira'];
+  for (const name of prefer) {
+    const hit = en.find((v) => v.name.startsWith(name));
+    if (hit) return hit;
+  }
+  return en.find((v) => /premium|enhanced|natural/i.test(v.name)) ?? en[0] ?? voices[0];
+}
+
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [settings, setSettings] = useState<Settings>(loadSettings);
@@ -90,19 +104,45 @@ export default function App() {
     [session],
   );
 
-  // "/" focuses the composer from anywhere.
+  // "/" focuses the composer from anywhere. Holding Space while the mic is muted
+  // is push-to-talk: the mic opens for as long as the key is held.
+  const pttRef = useRef(false);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+    const inField = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
-      e.preventDefault();
-      setMobileView('voice');
-      inputRef.current?.focus();
+      return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === '/') {
+        if (inField(e)) return;
+        e.preventDefault();
+        setMobileView('voice');
+        inputRef.current?.focus();
+        return;
+      }
+      if (e.key === ' ' && !inField(e) && !e.repeat) {
+        const st = stateRef.current;
+        if (st.connection === 'connected' && !st.micEnabled && !pttRef.current) {
+          e.preventDefault();
+          pttRef.current = true;
+          session.enableMic(true);
+        }
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === ' ' && pttRef.current) {
+        pttRef.current = false;
+        session.enableMic(false);
+      }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+  }, [session]);
 
   // Browser TTS fallback when the server has no voice.
   const spokenRef = useRef<Map<string, number>>(new Map());
@@ -116,7 +156,13 @@ export default function App() {
       if (text.length <= spoken) continue;
       spokenRef.current.set(t.id, text.length);
       const chunk = text.slice(spoken).trim();
-      if (chunk) speechSynthesis.speak(new SpeechSynthesisUtterance(chunk));
+      if (chunk) {
+        const u = new SpeechSynthesisUtterance(chunk);
+        const v = pickBrowserVoice();
+        if (v) u.voice = v;
+        u.rate = 1.05;
+        speechSynthesis.speak(u);
+      }
     }
   }, [state.turns, browserTtsActive]);
   useEffect(() => {

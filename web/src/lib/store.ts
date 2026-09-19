@@ -443,10 +443,17 @@ function reduceServer(s: State, msg: ServerMessage): State {
         ts: Date.now(),
       };
       const fileOrder = [msg.path, ...s.fileOrder.filter((p) => p !== msg.path)];
-      return autoTab(
-        { ...s, files: { ...s.files, [msg.path]: rec }, fileOrder, selectedFile: msg.path },
-        'files',
-      );
+      // A rewrite while a page is open in the Browser pane: reload it in place so the
+      // change is visible immediately, and keep the Browser tab in front.
+      const liveReload = msg.action === 'write' && !!s.browserUrl && /\.(html?|css|js|mjs|svg|json)$/i.test(msg.path);
+      const next = {
+        ...s,
+        files: { ...s.files, [msg.path]: rec },
+        fileOrder,
+        selectedFile: msg.path,
+        browserNonce: liveReload ? s.browserNonce + 1 : s.browserNonce,
+      };
+      return autoTab(next, liveReload ? 'browser' : 'files');
     }
 
     case 'github_event': {

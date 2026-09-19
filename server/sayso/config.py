@@ -45,7 +45,7 @@ class Settings:
     # STT
     stt_provider: str = "whisper-local"  # gradium | deepgram | whisper-mlx | whisper-local
     # TTS
-    tts_provider: str = "browser"  # hume | browser
+    tts_provider: str = "kokoro"  # hume | kokoro (local neural voice) | browser
     hume_api_key: str | None = None
     hume_voice_id: str | None = None
     hume_voice_name: str = "Ava Song"
@@ -116,7 +116,8 @@ def load_settings() -> Settings:
     s.hume_api_key = _env("HUME_API_KEY")
     s.hume_voice_id = _env("HUME_VOICE_ID")
     s.hume_voice_name = _env("HUME_VOICE_NAME", "Ava Song") or "Ava Song"
-    s.tts_provider = "hume" if s.hume_api_key else "browser"
+    forced_tts = (_env("SAYSO_TTS_PROVIDER") or "").lower()
+    s.tts_provider = forced_tts or ("hume" if s.hume_api_key else "kokoro")
     s.emotion_enabled = bool(s.hume_api_key) and (_env("SAYSO_EMOTION", "1") != "0")
     s.fake_emotion = _env("SAYSO_FAKE_EMOTION", "0") == "1"
 

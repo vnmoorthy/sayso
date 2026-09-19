@@ -69,6 +69,15 @@ elif SETTINGS.stt_provider == "whisper-local":
     logger.info("Warming local Whisper (faster-whisper)…")
     from pipecat.services.whisper.stt import Model, WhisperSTTService  # noqa: E402,F401
 
+if SETTINGS.tts_provider == "kokoro":
+    try:
+        from pipecat.services.kokoro.tts import KOKORO_CACHE_DIR, _ensure_model_files  # noqa: E402
+
+        _ensure_model_files(KOKORO_CACHE_DIR / "kokoro-v1.0.onnx", KOKORO_CACHE_DIR / "voices-v1.0.bin")
+        logger.info("Kokoro voice model ready")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"Kokoro model prefetch failed: {exc}")
+
 logger.info("✅ Components loaded")
 
 TOOLBOX = Toolbox(SETTINGS)
@@ -168,7 +177,30 @@ async def resolve_hume_voice() -> tuple[str | None, list[dict]]:
     return voice_id, voices[:40]
 
 
+KOKORO_VOICES = [
+    {"id": "af_heart", "name": "Heart (Kokoro, local)"},
+    {"id": "af_bella", "name": "Bella (Kokoro, local)"},
+    {"id": "af_nicole", "name": "Nicole (Kokoro, local)"},
+    {"id": "af_sky", "name": "Sky (Kokoro, local)"},
+    {"id": "am_adam", "name": "Adam (Kokoro, local)"},
+    {"id": "am_michael", "name": "Michael (Kokoro, local)"},
+    {"id": "bf_emma", "name": "Emma (Kokoro, local, British)"},
+    {"id": "bm_george", "name": "George (Kokoro, local, British)"},
+]
+
+
 async def build_tts():
+    if SETTINGS.tts_provider == "kokoro":
+        from pipecat.services.kokoro.tts import KokoroTTSService
+
+        voice = os.getenv("KOKORO_VOICE", "af_heart")
+        logger.info(f"TTS: Kokoro (local neural voice) {voice}")
+        try:
+            tts = KokoroTTSService(settings=KokoroTTSService.Settings(voice=voice, speed=1.05))
+            return tts, KOKORO_VOICES, voice
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"Kokoro unavailable ({exc}); falling back to browser speech")
+            return None, [], None
     if SETTINGS.tts_provider != "hume":
         logger.info("TTS: none on server → browser speech synthesis fallback")
         return None, [], None
@@ -205,7 +237,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     rtvi = RTVIProcessor()
     bus.set_rtvi(rtvi)
 
-    tts_settings_cls = type(tts).Settings if tts is not None else None
+    tts_settings_cls = type(tts).Settings if (tts is not None and SETTINGS.tts_provider == "hume") else None
     emotion = HumeEmotionProcessor(
         api_key=SETTINGS.hume_api_key,
         enabled=SETTINGS.emotion_enabled,
@@ -239,7 +271,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
                 "mode": SETTINGS.mode,
                 "llm": {"provider": SETTINGS.llm_provider, "model": current["model"], "models": SETTINGS.llm_models},
                 "stt": SETTINGS.stt_provider,
-                "tts": "hume" if tts is not None else "browser",
+                "tts": (SETTINGS.tts_provider if tts is not None else "browser"),
                 "emotion": emotion.active,
                 "workspace": str(SETTINGS.workspace),
                 "voices": voices,
