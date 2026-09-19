@@ -22,7 +22,7 @@ function useTween(target: number | undefined, ms = 450): number | undefined {
     const start = performance.now();
     let raf = 0;
     const step = (now: number) => {
-      const t = Math.min(1, (now - start) / ms);
+      const t = Math.min(1, Math.max(0, (now - start) / ms));
       const eased = 1 - Math.pow(1 - t, 3);
       setValue(from + (target - from) * eased);
       if (t < 1) raf = requestAnimationFrame(step);

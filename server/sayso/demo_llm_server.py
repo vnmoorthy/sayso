@@ -100,8 +100,9 @@ def _content_text(content: Any) -> str:
 
 def _tone(messages: list[dict]) -> str:
     for msg in reversed(messages[-6:]):
-        if msg.get("role") == "system" and "[User tone:" in _content_text(msg.get("content")):
-            m = re.search(r"\[User tone: (\w+)", _content_text(msg["content"]))
+        text = _content_text(msg.get("content")).lstrip()
+        if msg.get("role") in ("system", "developer") and text.startswith("[User tone:"):
+            m = re.match(r"\[User tone: (\w+)", text)
             if m:
                 return m.group(1)
     return "neutral"
@@ -138,6 +139,18 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
 
     if last.get("role") == "tool":
         return _summarize(messages, tone), []
+
+    # Pipecat can re-run the model once more after a tool batch has already been
+    # summarised (the pre-tool text commits after the results). If the tail of the
+    # context is "tool result(s) then our own text", we already answered: stay quiet.
+    if last.get("role") == "assistant" and not last.get("tool_calls"):
+        for prev in reversed(messages[:-1]):
+            if prev.get("role") == "tool":
+                return "", []
+            if prev.get("role") == "user":
+                break
+            if prev.get("role") == "assistant" and not prev.get("tool_calls"):
+                break
 
     user = ""
     for msg in reversed(messages):
@@ -185,7 +198,7 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
                     {"command": f"python3 -m http.server {port} --directory {project}", "name": project, "port": port},
                 )
             )
-        return f"{_prefix(tone)}On it. Scaffolding {project} now.", calls
+        return None, calls
 
     if re.search(r"\b(run|start|serve|launch)\b.*\b(it|server|app|site|again)\b", u) and not re.search(r"test", u):
         port = _port_from(u) if re.search(r"\bport\b", u) else port
@@ -206,7 +219,7 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
     if re.search(r"\bfix\b|\bmake (it|them|the tests?) pass\b|\brepair\b", u):
         STATE["fixed"] = True
         huge = "huge" in u or "big" in u or "neon" in u or STATE.get("huge")
-        return f"{_prefix(tone)}Fixing the title and re-running the tests.", [
+        return None, [
             ("write_file", {"path": f"{project}/index.html", "content": clock_html(project, huge=bool(huge), fixed=True)}),
             ("run_shell", {"command": f"cd {project} && python3 test_app.py"}),
         ]
@@ -223,7 +236,7 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
 
     if re.search(r"\b(bigger|huge|larger|giant|neon|green|glow|color|colour|dark|font|style|pretty|nicer)\b", u):
         STATE["huge"] = True
-        return f"{_prefix(tone)}Making it huge and neon.", [
+        return None, [
             ("write_file", {"path": f"{project}/index.html", "content": clock_html(project, huge=True, fixed=STATE["fixed"])})
         ]
 
@@ -258,27 +271,56 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
     )
 
 
+def _infer_name(payload: dict) -> str:
+    """Best-effort tool name from a result payload (used if tool_call ids don't line up)."""
+    if payload.get("awaiting_confirmation"):
+        return "run_shell"
+    if "pid" in payload or ("port" in payload and "name" in payload):
+        return "start_background"
+    if "exit_code" in payload:
+        return "run_shell"
+    if "bytes" in payload and "path" in payload:
+        return "write_file"
+    if "content" in payload and "path" in payload:
+        return "read_file"
+    if "entries" in payload:
+        return "list_files"
+    if "number" in payload and "url" in payload:
+        return "github_create_issue"
+    if "stargazerCount" in payload:
+        return "github_repo_info"
+    if "url" in payload and "text" in payload:
+        return "fetch_url"
+    if "url" in payload:
+        return "open_url"
+    if "stopped" in payload or payload.get("summary", "").startswith("stopped"):
+        return "stop_background"
+    return ""
+
+
 def _summarize(messages: list[dict], tone: str) -> str:
     """Turn the most recent batch of tool results into one spoken sentence."""
     results: list[tuple[str, dict]] = []
     names: dict[str, str] = {}
     for msg in reversed(messages):
-        if msg.get("role") == "tool":
+        role = msg.get("role")
+        if role == "tool":
             try:
                 payload = json.loads(_content_text(msg.get("content")) or "{}")
             except json.JSONDecodeError:
                 payload = {"raw": _content_text(msg.get("content"))}
             results.append((msg.get("tool_call_id", ""), payload))
-        elif msg.get("role") == "assistant" and msg.get("tool_calls"):
+        elif role == "assistant" and msg.get("tool_calls"):
             for call in msg["tool_calls"]:
                 names[call.get("id", "")] = call.get("function", {}).get("name", "")
+        elif role == "user":
             break
-        elif msg.get("role") == "assistant":
-            break
+        elif role == "assistant" and results:
+            break  # a plain assistant reply marks the previous batch
     results.reverse()
     parts: list[str] = []
     for call_id, payload in results:
-        name = names.get(call_id, "")
+        name = names.get(call_id) or _infer_name(payload)
         if payload.get("awaiting_confirmation"):
             STATE["pending"] = payload.get("confirmation_id")
             return (
@@ -418,6 +460,15 @@ async def chat(request: Request):
     model = body.get("model", "sayso-demo-brain")
     cid = f"chatcmpl-{uuid.uuid4().hex[:12]}"
     prompt_tokens = sum(len(_content_text(m.get("content"))) // 4 for m in messages)
+    logger.debug(
+        "demo brain ctx: "
+        + " | ".join(
+            f"{m.get('role')}"
+            + (f"[{','.join(tc.get('id', '?')[-4:] for tc in m['tool_calls'])}]" if m.get("tool_calls") else "")
+            + (f"({m.get('tool_call_id', '')[-4:]})" if m.get("role") == "tool" else "")
+            for m in messages[-8:]
+        )
+    )
     try:
         text, calls = decide(messages)
     except Exception as exc:  # noqa: BLE001

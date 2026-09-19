@@ -678,7 +678,7 @@ class Toolbox:
 
     def register(self, llm: Any) -> None:
         for name, fn in self.handlers().items():
-            llm.register_function(name, self._wrap(name, fn), cancel_on_interruption=False)
+            llm.register_function(name, self._wrap(name, fn))
 
     def _wrap(self, name: str, fn: Callable[..., Awaitable[dict]]):
         sig = inspect.signature(fn)
