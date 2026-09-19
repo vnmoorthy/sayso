@@ -20,6 +20,7 @@
 </p>
 
 <p align="center">
+  <a href="https://vnmoorthy.github.io/sayso/?mock=1"><strong>▶ Try the live mock (no install)</strong></a> ·
   <a href="#quickstart">Quickstart</a> ·
   <a href="#say-it--it-does-it">Examples</a> ·
   <a href="#architecture">Architecture</a> ·
