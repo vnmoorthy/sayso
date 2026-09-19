@@ -65,6 +65,17 @@ from sayso.tools import Toolbox  # noqa: E402
 if SETTINGS.stt_provider == "whisper-mlx":
     logger.info("Warming local Whisper (MLX)…")
     from pipecat.services.whisper.stt import MLXModel, WhisperSTTServiceMLX  # noqa: E402,F401
+
+    try:  # load the weights now (first transcription otherwise pays a multi-second cold start)
+        import mlx_whisper  # noqa: E402
+        import numpy as _np  # noqa: E402
+
+        _whisper_model = os.getenv("SAYSO_WHISPER_MODEL") or str(MLXModel.LARGE_V3_TURBO_Q4)
+        # Same call shape as Pipecat's service so the cached weights match its dtype.
+        mlx_whisper.transcribe(_np.zeros(16000, dtype=_np.float32), path_or_hf_repo=_whisper_model, language="en")
+        logger.info(f"Whisper {_whisper_model} warm")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"Whisper warm-up skipped: {exc}")
 elif SETTINGS.stt_provider == "whisper-local":
     logger.info("Warming local Whisper (faster-whisper)…")
     from pipecat.services.whisper.stt import Model, WhisperSTTService  # noqa: E402,F401

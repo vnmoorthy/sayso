@@ -177,7 +177,7 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
         return None, [("resolve_confirmation", {"id": cid, "approved": False})]
 
     if not STATE["pending"] and re.fullmatch(r"(yes|yeah|yep|sure|approve|go ahead|do it|confirm|ok|okay)[.! ]*", u):
-        return "Nothing is waiting on your approval right now.", []
+        return "Okay.", []
 
     if re.search(r"\b(hi|hello|hey|what can you do|who are you|help|introduce)\b", u) and len(u) < 60:
         return (

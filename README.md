@@ -59,6 +59,8 @@ Sayso is a developer agent you operate with your voice. It runs on a [Pipecat](h
 **Voice**
 - Full-duplex, browser-to-server WebRTC audio via Pipecat's SmallWebRTC transport; Silero VAD and smart-turn v3 end-of-turn detection so you can speak naturally.
 - STT from Gradium or Deepgram, with local Whisper (MLX on Apple Silicon) as a keyless fallback.
+- A realistic voice with zero keys: **Kokoro** (54 local neural voices, runs faster than real time on Apple Silicon) is the default when there is no Hume key; Hume Octave takes over the moment you add one.
+- Hold **Space** to talk while the mic is muted (push-to-talk for loud rooms); the Browser pane reloads in place when the agent rewrites the page it is showing.
 - Replies spoken with Hume Octave TTS; pick a voice from Hume's library in Settings (default: *Ava Song*).
 
 **Acts**
@@ -232,6 +234,8 @@ sayso/
 ```
 
 ## Demo mode and mock mode
+
+**Prove the voice loop without a microphone:** `cd server && uv run scripts/voice_e2e.py` streams six spoken utterances (synthesised with macOS `say`) into the running server over WebRTC exactly like the browser does, and reports the transcript, the tool calls, the spoken reply and whether voice audio came back.
 
 **Demo mode (server, no keys).** When no LLM key is present, `bot.py` starts `sayso/demo_llm_server.py`: a small FastAPI app on `127.0.0.1:7861` that speaks the OpenAI chat-completions protocol (streaming, tool calls and usage included) and answers with a rule-based script. It understands the demo flow — scaffold an app, serve it, open it, run the tests, fix them, restyle it, file an issue, delete something (which triggers the say-so card) — and it reads the same tone notes the real model gets, so "Ugh, this is broken" earns a "Sorry about that." Pipecat's OpenAI service is pointed at it, so tool calls, streaming, confirmations and every UI event are exercised for real. Add a key and the real model takes over with the same tools. `SAYSO_FAKE_EMOTION=1` additionally simulates moods from loudness when there is no Hume key; those events carry `simulated: true`.
 

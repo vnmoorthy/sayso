@@ -106,6 +106,7 @@ class Session:
         self.bot_ready = asyncio.Event()
         self.audio_frames = 0
         self.voiced_frames = 0
+        self.last_voiced = 0.0
         self.pc.addTrack(self.mic)
         self.channel.on("message", self._on_message)
         self.pc.on("track", self._on_track)
@@ -134,6 +135,7 @@ class Session:
                 pcm = frame.to_ndarray()
                 if pcm.size and float(np.abs(pcm.astype(np.float32)).mean()) > 50:
                     self.voiced_frames += 1
+                    self.last_voiced = time.monotonic()
 
         asyncio.ensure_future(drain())
 
@@ -162,11 +164,20 @@ class Session:
         await asyncio.wait_for(self.bot_ready.wait(), 30)
 
     async def quiesce(self, idle: float = 3.0, limit: float = 40.0) -> None:
+        """Wait until neither RTVI events nor bot audio have arrived for `idle` seconds."""
         start = time.monotonic()
         while time.monotonic() - start < limit:
             await asyncio.sleep(0.25)
-            if time.monotonic() - self.last_event > idle and time.monotonic() - start > 2.0:
+            now = time.monotonic()
+            if now - self.last_event > idle and now - self.last_voiced > idle and now - start > 2.0:
                 return
+
+    async def wait_transcript(self, limit: float = 20.0) -> None:
+        start = time.monotonic()
+        while time.monotonic() - start < limit:
+            if any(e.get("type") == "user-transcription" and (e.get("data") or {}).get("final") for e in self.events):
+                return
+            await asyncio.sleep(0.2)
 
     def take(self) -> list[dict]:
         out, self.events = self.events, []
@@ -211,7 +222,7 @@ async def main() -> int:
     t0 = time.monotonic()
     await s.connect()
     print(f"✅ connected + bot ready in {time.monotonic() - t0:.1f}s")
-    await s.quiesce(idle=2.5, limit=20)
+    await s.quiesce(idle=2.5, limit=30)
     greet = summarize(s.take())
     print(f"🗣  greeting: {greet['bot'][:90]!r}  (bot audio frames so far: {s.audio_frames}, voiced: {s.voiced_frames})")
 
@@ -220,6 +231,7 @@ async def main() -> int:
         voiced_before = s.voiced_frames
         dur = s.mic.say(wav)
         await asyncio.sleep(dur + 0.5)
+        await s.wait_transcript()
         await s.quiesce(idle=3.0, limit=45)
         r = summarize(s.take())
         heard = overlap(text, r["transcript"])
