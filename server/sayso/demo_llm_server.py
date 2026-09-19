@@ -351,7 +351,7 @@ def _summarize(messages: list[dict], tone: str) -> str:
             else:
                 err = (payload.get("stderr") or payload.get("stdout") or payload.get("error") or "").strip().splitlines()
                 detail = next((l for l in reversed(err) if l.strip()), "")
-                if "expected the page title" in detail:
+                if any("expected the page title" in l for l in err):
                     parts.append("One test failed: it expected the page title to be capitalised. Want me to fix it?")
                 else:
                     parts.append(f"That failed with exit code {payload.get('exit_code')}. {detail[:100]}")
