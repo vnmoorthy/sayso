@@ -239,6 +239,8 @@ sayso/
 
 ## Hackathon
 
+**Pitch deck:** [`docs/deck/Sayso.pptx`](docs/deck/Sayso.pptx) · **3-minute demo storyboard:** [`docs/DEMO_STORYBOARD.md`](docs/DEMO_STORYBOARD.md) · **Live mock:** <https://vnmoorthy.github.io/sayso/?mock=1>
+
 Built at the **AGI House SF Voice AI Hackathon**, September 19, 2026 — [agihouse.ai/voiceaihackathon](https://agihouse.ai/voiceaihackathon).
 
 - **Track 2 — Voice-controlled software: from the terminal to the browser.** Sayso operates the terminal, files, dev servers and an in-app browser by voice.
