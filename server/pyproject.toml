@@ -1,9 +1,9 @@
 [project]
 name = "sayso-server"
 version = "0.1.0"
-description = "Add your description here"
+description = "Sayso — a voice-native developer agent that operates your terminal, browser and GitHub (Pipecat · SambaNova · Hume)"
 authors = [
-    { name = "AmperesAI", email = "moorthyv@amperes.pro" }
+    { name = "V N Moorthy", email = "vnarasingamoorthy@gmail.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
@@ -12,10 +12,3 @@ dependencies = [
     "python-dotenv>=1.2.3",
     "websockets>=17.1",
 ]
-
-[project.scripts]
-sayso-server = "sayso_server:main"
-
-[build-system]
-requires = ["uv_build>=0.12.5,<0.13.0"]
-build-backend = "uv_build"

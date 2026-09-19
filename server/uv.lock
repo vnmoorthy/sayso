@@ -3072,7 +3072,7 @@ wheels = [
 [[package]]
 name = "sayso-server"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "httpx" },
     { name = "pipecat-ai", extra = ["deepgram", "hume", "local-smart-turn", "mlx-whisper", "runner", "webrtc", "whisper"] },
