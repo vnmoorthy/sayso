@@ -62,6 +62,13 @@ export function Composer({
           ref={inputRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            // Explicit Enter handling — don't rely on implicit form submission.
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              submit();
+            }
+          }}
           disabled={disabled}
           placeholder="Type a command or just talk…"
           aria-label="Message Sayso"
