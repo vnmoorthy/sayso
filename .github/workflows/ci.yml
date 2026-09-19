@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  server:
+    name: Server · syntax & unit checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Byte-compile the agent
+        run: python -m compileall -q server/bot.py server/sayso server/scripts
+      - name: Safety classifier smoke test
+        run: |
+          cd server
+          python - <<'PY'
+          import importlib.util, pathlib, sys
+          # load tools.py without pipecat: stub the two imports it needs for schemas
+          src = pathlib.Path("sayso/tools.py").read_text()
+          src = src.split("# --------------------------------------------------------------------------------------\n# Background process manager")[0]
+          src = "\n".join(l for l in src.splitlines() if not l.startswith(("from pipecat", "from .bus", "from .config", "import httpx")))
+          ns = {}
+          exec(src, ns)
+          cc = ns["classify_command"]
+          assert cc("ls -la") is None
+          assert cc("rm -rf build")
+          assert cc("sudo reboot")
+          assert cc("git push --force")
+          assert cc("cat ~/.zshrc")
+          assert cc("cd .. && ls")
+          print("classifier ok")
+          PY
+
+  web:
+    name: Web · typecheck & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npm run build
+        working-directory: web
