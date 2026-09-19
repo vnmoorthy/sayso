@@ -24,7 +24,7 @@ jobs:
           # load tools.py without pipecat: stub the two imports it needs for schemas
           src = pathlib.Path("sayso/tools.py").read_text()
           src = src.split("# --------------------------------------------------------------------------------------\n# Background process manager")[0]
-          src = "\n".join(l for l in src.splitlines() if not l.startswith(("from pipecat", "from .bus", "from .config", "import httpx")))
+          src = "\n".join(l for l in src.splitlines() if not l.startswith(("from pipecat", "from loguru", "from .", "import httpx")))
           ns = {}
           exec(src, ns)
           cc = ns["classify_command"]
@@ -45,8 +45,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
       - run: npm ci
         working-directory: web
       - run: npm run build
