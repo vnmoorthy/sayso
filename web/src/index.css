@@ -1,0 +1,262 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter Tight", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-bg: #09090b;
+  --color-surface: #111114;
+  --color-surface-2: #16161a;
+  --color-surface-3: #1c1c22;
+  --color-line: rgba(255, 255, 255, 0.06);
+  --color-line-2: rgba(255, 255, 255, 0.11);
+  --color-text: #f4f4f5;
+  --color-muted: #a1a1aa;
+  --color-dim: #71717a;
+  --color-lime: #c8ff3d;
+  --color-violet: #8b7cff;
+  --color-amber: #ffb020;
+  --color-danger: #ff5c5c;
+  --color-ice: #5eb0ff;
+
+  --shadow-soft: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 20px 50px -30px rgba(0, 0, 0, 0.9);
+  --shadow-glow: 0 0 0 1px rgba(200, 255, 61, 0.35), 0 10px 30px -12px rgba(200, 255, 61, 0.55);
+
+  --animate-caret: caret 1s steps(1) infinite;
+  --animate-pulse-dot: pulse-dot 1.4s ease-in-out infinite;
+  --animate-spin-slow: spin-slow 7s linear infinite;
+  --animate-fade-in: fade-in 240ms ease-out both;
+}
+
+/* Keyframes live outside @theme so plain CSS (.caret, .orb-thinking) can use them too. */
+@keyframes caret {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.35; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
+}
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Orb hue tokens — animated between moods via @property */
+@property --orb-a { syntax: "<color>"; inherits: true; initial-value: #f4f4f5; }
+@property --orb-b { syntax: "<color>"; inherits: true; initial-value: #c8ff3d; }
+@property --orb-c { syntax: "<color>"; inherits: true; initial-value: #3f4a2a; }
+
+:root {
+  color-scheme: dark;
+  --orb-a: #f4f4f5;
+  --orb-b: #c8ff3d;
+  --orb-c: #3f4a2a;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 620px at 14% 24%, rgba(200, 255, 61, 0.07), transparent 62%),
+    radial-gradient(800px 520px at 86% 88%, rgba(139, 124, 255, 0.07), transparent 62%);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background: rgba(200, 255, 61, 0.3);
+}
+
+:focus-visible {
+  outline: 2px solid rgba(200, 255, 61, 0.55);
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ---------------------------------------------------------------- panels */
+
+.panel {
+  border-radius: 1rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.875rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-dim);
+}
+
+/* ---------------------------------------------------------------- orb */
+
+.orb {
+  position: relative;
+  transition: --orb-a 900ms ease, --orb-b 900ms ease, --orb-c 900ms ease;
+}
+
+.orb-glow {
+  position: absolute;
+  inset: -34%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--orb-b) 0%, transparent 62%);
+  filter: blur(28px);
+  opacity: 0.35;
+  will-change: transform, opacity;
+}
+
+.orb-ring {
+  position: absolute;
+  inset: -7%;
+  border-radius: 50%;
+  border: 2px solid var(--orb-b);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.orb-core {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--orb-a) 92%, white) 0%, var(--orb-a) 18%, var(--orb-b) 52%, var(--orb-c) 100%);
+  box-shadow:
+    inset 0 -24px 48px rgba(0, 0, 0, 0.42),
+    inset 0 2px 6px rgba(255, 255, 255, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  will-change: transform;
+}
+
+.orb-blob {
+  position: absolute;
+  width: 72%;
+  height: 72%;
+  border-radius: 45% 55% 60% 40% / 50% 40% 60% 50%;
+  filter: blur(16px);
+  mix-blend-mode: screen;
+  opacity: 0.85;
+}
+.orb-blob-a { background: var(--orb-b); top: -12%; left: -6%; animation: orb-drift-a 9s ease-in-out infinite; }
+.orb-blob-b { background: var(--orb-c); bottom: -18%; right: -10%; animation: orb-drift-b 11s ease-in-out infinite; }
+.orb-blob-c { background: var(--orb-a); width: 40%; height: 40%; top: 18%; right: 8%; opacity: 0.55; animation: orb-drift-c 7s ease-in-out infinite; }
+
+.orb-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 38%);
+  pointer-events: none;
+}
+
+.orb-thinking {
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  border: 2px dashed var(--color-violet);
+  opacity: 0.75;
+  animation: spin-slow 7s linear infinite;
+}
+
+.orb-idle .orb-core { animation: orb-breathe 4.5s ease-in-out infinite; }
+
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+@keyframes orb-drift-a {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  33% { transform: translate(14%, 10%) rotate(40deg) scale(1.08); }
+  66% { transform: translate(-6%, 18%) rotate(-25deg) scale(0.94); }
+}
+@keyframes orb-drift-b {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  40% { transform: translate(-16%, -12%) rotate(-35deg) scale(1.1); }
+  70% { transform: translate(8%, -20%) rotate(30deg) scale(0.96); }
+}
+@keyframes orb-drift-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30%, 40%) scale(1.25); }
+}
+
+/* ---------------------------------------------------------------- misc */
+
+.caret::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--color-lime);
+  animation: caret 1s steps(1) infinite;
+}
+
+.terminal-surface {
+  background: #050506;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb-blob, .orb-thinking, .orb-idle .orb-core { animation: none; }
+}
+
+/* ?mock=1&instant=1 — deterministic frame for headless screenshots */
+html[data-instant] *,
+html[data-instant] *::before,
+html[data-instant] *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
