@@ -144,6 +144,8 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
     # summarised (the pre-tool text commits after the results). If the tail of the
     # context is "tool result(s) then our own text", we already answered: stay quiet.
     if last.get("role") == "assistant" and not last.get("tool_calls"):
+        if not _content_text(last.get("content")).strip():
+            return _summarize(messages, tone), []
         for prev in reversed(messages[:-1]):
             if prev.get("role") == "tool":
                 return "", []
@@ -318,6 +320,11 @@ def _summarize(messages: list[dict], tone: str) -> str:
         elif role == "assistant" and results:
             break  # a plain assistant reply marks the previous batch
     results.reverse()
+    if any(p.get("raw") == "IN_PROGRESS" for _, p in results):
+        return ""  # a slower tool is still running; Pipecat re-runs us when it lands
+    results = [(cid, p) for cid, p in results if "raw" not in p]
+    if not results:
+        return ""
     parts: list[str] = []
     for call_id, payload in results:
         name = names.get(call_id) or _infer_name(payload)
