@@ -72,6 +72,7 @@ const SERVER_MESSAGE_TYPES: ReadonlySet<string> = new Set<ServerMessageType>([
   'process',
   'workspace',
   'notice',
+  'browser_frame',
 ]);
 
 /** Loose runtime guard for payloads arriving through onServerMessage. */
