@@ -7,27 +7,36 @@ from typing import Any
 
 from loguru import logger
 
-_rtvi: Any | None = None
-_pending: list[dict] = []
+_rtvis: list[Any] = []
 
 
 def set_rtvi(rtvi: Any | None) -> None:
-    """Register the RTVI processor used to deliver server messages."""
-    global _rtvi
-    _rtvi = rtvi
+    """Register (or, with None, clear) RTVI processors that receive server messages.
+
+    Every connected client gets every message: a second tab (or a test client) must never
+    steal the tool/browser events from the first.
+    """
+    if rtvi is None:
+        _rtvis.clear()
+    elif rtvi not in _rtvis:
+        _rtvis.append(rtvi)
+
+
+def remove_rtvi(rtvi: Any) -> None:
+    try:
+        _rtvis.remove(rtvi)
+    except ValueError:
+        pass
 
 
 async def emit(data: dict) -> None:
-    """Send a custom message to the client (silently dropped if no client is attached)."""
-    if _rtvi is None:
-        _pending.append(data)
-        if len(_pending) > 200:
-            del _pending[:100]
-        return
-    try:
-        await _rtvi.send_server_message(data)
-    except Exception as exc:  # pragma: no cover - defensive
-        logger.warning(f"bus.emit failed: {exc}")
+    """Broadcast a custom message to every attached client (dropped if none)."""
+    for rtvi in list(_rtvis):
+        try:
+            await rtvi.send_server_message(data)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.debug(f"bus.emit to {rtvi} failed: {exc}")
+            remove_rtvi(rtvi)
 
 
 def emit_soon(data: dict) -> None:

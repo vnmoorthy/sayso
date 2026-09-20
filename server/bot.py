@@ -463,7 +463,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
         logger.info("Client disconnected (background processes keep running until the server exits)")
-        bus.set_rtvi(None)
+        bus.remove_rtvi(rtvi)
         await task.cancel()
 
     runner = WorkerRunner(handle_sigint=runner_args.handle_sigint)
