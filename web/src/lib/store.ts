@@ -354,7 +354,11 @@ function reduceServer(s: State, msg: ServerMessage): State {
         idx = terminal.length - 1;
       }
       const updated = terminal.map((b, j) => (j === idx ? appendOutput(b, msg.stream, msg.chunk) : b));
-      return autoTab({ ...s, terminal: updated }, 'terminal');
+      // Only a foreground command pulls the Terminal forward; chatter from background
+      // servers (request logs) must not steal the tab from the Browser pane.
+      const block = updated[idx];
+      const foreground = block.name !== 'start_background' && block.status === 'running';
+      return foreground ? autoTab({ ...s, terminal: updated }, 'terminal') : { ...s, terminal: updated };
     }
 
     case 'tool_result': {
@@ -432,21 +436,16 @@ function reduceServer(s: State, msg: ServerMessage): State {
       };
 
     case 'open_url':
-      return autoTab(
-        { ...s, browserUrl: msg.url, browserTitle: msg.title, browserNonce: s.browserNonce + 1, browserShot: null },
-        'browser',
-      );
+      return { ...s, browserUrl: msg.url, browserTitle: msg.title, browserNonce: s.browserNonce + 1, browserShot: null, tab: 'browser' };
 
     case 'browser_frame':
-      return autoTab(
-        {
-          ...s,
-          browserShot: { image: msg.image, url: msg.url, title: msg.title, action: msg.action, ts: msg.ts },
-          browserUrl: msg.url,
-          browserTitle: msg.title,
-        },
-        'browser',
-      );
+      return {
+        ...s,
+        browserShot: { image: msg.image, url: msg.url, title: msg.title, action: msg.action, ts: msg.ts },
+        browserUrl: msg.url,
+        browserTitle: msg.title,
+        tab: 'browser',
+      };
 
     case 'file_changed': {
       const rec: FileRecord = {
