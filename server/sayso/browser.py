@@ -8,16 +8,30 @@ Browser pane so the audience sees exactly what the agent sees.
 from __future__ import annotations
 
 import asyncio
-import base64
 import os
 import re
 import time
+import uuid
+from collections import OrderedDict
 from typing import Any
 from urllib.parse import quote_plus
 
 from loguru import logger
 
 from .bus import emit
+
+# Screenshots are served over HTTP by the runner (see bot.py) — a 100 KB JPEG does not fit
+# through the WebRTC data channel (64 KB max message), so the UI is sent a URL instead.
+FRAMES: "OrderedDict[str, bytes]" = OrderedDict()
+FRAME_BASE_URL = os.getenv("SAYSO_PUBLIC_URL", "http://localhost:7860").rstrip("/")
+
+
+def store_frame(data: bytes) -> str:
+    frame_id = uuid.uuid4().hex[:12]
+    FRAMES[frame_id] = data
+    while len(FRAMES) > 40:
+        FRAMES.popitem(last=False)
+    return frame_id
 
 SNAPSHOT_JS = r"""
 () => {
@@ -167,11 +181,12 @@ class BrowserController:
 
     async def _frame(self, page, action: str) -> None:
         try:
-            shot = await page.screenshot(type="jpeg", quality=55, full_page=False)
+            shot = await page.screenshot(type="jpeg", quality=60, full_page=False)
+            frame_id = store_frame(shot)
             await emit(
                 {
                     "type": "browser_frame",
-                    "image": "data:image/jpeg;base64," + base64.b64encode(shot).decode("ascii"),
+                    "image": f"{FRAME_BASE_URL}/frames/{frame_id}.jpg",
                     "url": page.url,
                     "title": await page.title(),
                     "action": action,

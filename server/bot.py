@@ -19,7 +19,7 @@ from loguru import logger
 
 load_dotenv(override=True)
 
-from sayso.config import VERSION, load_settings  # noqa: E402
+from sayso.config import SERVER_DIR, VERSION, load_settings  # noqa: E402
 
 SETTINGS = load_settings()
 
@@ -64,6 +64,10 @@ from pipecat.runner.utils import create_transport  # noqa: E402
 from pipecat.services.openai.llm import OpenAILLMService  # noqa: E402
 from pipecat.transports.base_transport import BaseTransport, TransportParams  # noqa: E402
 
+from fastapi.responses import Response  # noqa: E402
+from pipecat.runner.run import app as runner_app  # noqa: E402
+
+from sayso import browser as browser_mod  # noqa: E402
 from sayso import bus  # noqa: E402
 from sayso.emotion import HumeEmotionProcessor  # noqa: E402
 from sayso.prompts import GREETING_INSTRUCTION, SYSTEM_PROMPT  # noqa: E402
@@ -101,6 +105,15 @@ if SETTINGS.tts_provider == "kokoro":
 logger.info("✅ Components loaded")
 
 TOOLBOX = Toolbox(SETTINGS)
+
+
+@runner_app.get("/frames/{frame_id}.jpg", include_in_schema=False)
+async def get_browser_frame(frame_id: str):
+    """Latest screenshots from the agent's Chrome, referenced by browser_frame messages."""
+    data = browser_mod.FRAMES.get(frame_id)
+    if not data:
+        return Response(status_code=404)
+    return Response(content=data, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
 
 def _shutdown_processes() -> None:
@@ -228,8 +241,19 @@ async def build_tts():
 
     voice_id, voices = await resolve_hume_voice()
     if not voice_id:
-        logger.warning("Hume key present but no voice id resolved; set HUME_VOICE_ID. Falling back to browser TTS.")
-        return None, voices, None
+        logger.warning("Hume key present but no voice id resolved (API busy?); using the local Kokoro voice instead.")
+        SETTINGS.tts_provider = "kokoro"
+        return await build_tts()
+    if not SETTINGS.hume_voice_id:
+        # Remember the resolved id so restarts don't hit the voices endpoint again.
+        try:
+            env_path = SERVER_DIR / ".env"
+            if env_path.exists() and "HUME_VOICE_ID=" not in env_path.read_text():
+                with env_path.open("a") as fh:
+                    fh.write(f"\nHUME_VOICE_ID={voice_id}\n")
+                logger.info("Cached HUME_VOICE_ID in .env")
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"could not cache voice id: {exc}")
     logger.info(f"TTS: Hume Octave voice={voice_id}")
     tts = HumeTTSService(
         api_key=SETTINGS.hume_api_key,
