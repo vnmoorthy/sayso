@@ -252,7 +252,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     emotion = HumeEmotionProcessor(
         api_key=SETTINGS.hume_api_key,
         enabled=SETTINGS.emotion_enabled,
-        fake=SETTINGS.fake_emotion,
+        fake=SETTINGS.fake_emotion or os.getenv("SAYSO_EMOTION", "1") != "0",
         tts_settings_cls=tts_settings_cls,
     )
     stats = LLMStatsProcessor(model_getter=lambda: current["model"])
@@ -263,7 +263,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         user_params=LLMUserAggregatorParams(vad_analyzer=SileroVADAnalyzer()),
     )
 
-    processors = [transport.input(), rtvi, emotion, stt, user_aggregator, llm, stats]
+    processors = [transport.input(), rtvi, stt, emotion, user_aggregator, llm, stats]
     if tts is not None:
         processors.append(tts)
     processors += [transport.output(), assistant_aggregator]

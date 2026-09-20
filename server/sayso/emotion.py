@@ -14,6 +14,7 @@ import base64
 import io
 import json
 import math
+import re
 import struct
 import time
 import wave
@@ -25,6 +26,7 @@ from pipecat.frames.frames import (
     Frame,
     InputAudioRawFrame,
     LLMMessagesAppendFrame,
+    TranscriptionFrame,
     TTSUpdateSettingsFrame,
     UserStartedSpeakingFrame,
     UserStoppedSpeakingFrame,
@@ -115,6 +117,8 @@ class HumeEmotionProcessor(FrameProcessor):
         self._last_mood = "neutral"
         self._error_logged = False
         self._inflight: asyncio.Task | None = None
+        self._transcript = ""
+        self._transcript_event = asyncio.Event()
 
     @property
     def active(self) -> bool:
@@ -141,7 +145,12 @@ class HumeEmotionProcessor(FrameProcessor):
                 if seconds >= MIN_SECONDS:
                     if self._inflight and not self._inflight.done():
                         self._inflight.cancel()
+                    self._transcript = ""
+                    self._transcript_event.clear()
                     self._inflight = asyncio.create_task(self._analyze(audio, seconds))
+            elif isinstance(frame, TranscriptionFrame):
+                self._transcript = frame.text or ""
+                self._transcript_event.set()
 
         await self.push_frame(frame, direction)
 
@@ -149,18 +158,27 @@ class HumeEmotionProcessor(FrameProcessor):
 
     async def _analyze(self, audio: bytes, seconds: float) -> None:
         t0 = time.monotonic()
-        try:
-            if self._enabled:
+        simulated = not self._enabled
+        emotions: list[dict[str, float]] = []
+        if self._enabled:
+            try:
                 emotions = await self._score_with_hume(audio)
-                simulated = False
-            else:
-                emotions = self._fake_emotions(audio, seconds)
+            except Exception as exc:  # noqa: BLE001
+                if not self._error_logged:
+                    logger.warning(
+                        f"Hume expression measurement unavailable ({exc}); switching to the local tone heuristic"
+                    )
+                    self._error_logged = True
+                self._enabled = False
+                self._fake = True
                 simulated = True
-        except Exception as exc:  # noqa: BLE001
-            if not self._error_logged:
-                logger.warning(f"Hume emotion scoring failed: {exc}")
-                self._error_logged = True
-            return
+        if simulated:
+            # Give the transcript a moment to land so word cues can weigh in.
+            try:
+                await asyncio.wait_for(self._transcript_event.wait(), 1.5)
+            except asyncio.TimeoutError:
+                pass
+            emotions = self._fake_emotions(audio, seconds, self._transcript)
         if not emotions:
             return
 
@@ -216,14 +234,34 @@ class HumeEmotionProcessor(FrameProcessor):
                 acc.setdefault(e["name"], []).append(float(e["score"]))
         return [{"name": name, "score": sum(v) / len(v)} for name, v in acc.items()]
 
-    def _fake_emotions(self, audio: bytes, seconds: float) -> list[dict[str, float]]:
-        """Crude, clearly-labelled stand-in used only when SAYSO_FAKE_EMOTION=1 and no Hume key."""
+    def _fake_emotions(self, audio: bytes, seconds: float, transcript: str = "") -> list[dict[str, float]]:
+        """Local tone heuristic used when Hume's expression measurement is unavailable.
+
+        Combines loudness and pace with word cues from the transcript. Clearly labelled as
+        simulated in the UI; the *voice retuning* it drives (Hume Octave acting
+        instructions) is real.
+        """
         loud = rms_db(audio)
         energy = min(1.0, max(0.0, (loud + 40) / 30))  # -40dB..-10dB -> 0..1
-        if energy > 0.7 and seconds < 2.5:
-            return [{"name": "Excitement", "score": 0.35 + 0.3 * energy}, {"name": "Interest", "score": 0.3}, {"name": "Determination", "score": 0.2}]
-        if energy > 0.55 and seconds >= 2.5:
-            return [{"name": "Annoyance", "score": 0.3 + 0.3 * energy}, {"name": "Determination", "score": 0.25}, {"name": "Concentration", "score": 0.2}]
-        if energy < 0.25:
-            return [{"name": "Calmness", "score": 0.4}, {"name": "Contemplation", "score": 0.25}, {"name": "Interest", "score": 0.2}]
-        return [{"name": "Interest", "score": 0.32}, {"name": "Concentration", "score": 0.28}, {"name": "Calmness", "score": 0.2}]
+        words = transcript.lower()
+        scores: dict[str, float] = {"Interest": 0.28 + 0.1 * energy, "Calmness": 0.22 * (1 - energy), "Concentration": 0.2}
+        cues = {
+            "frustrated": (r"\b(ugh|argh|damn|dammit|annoying|stupid|hate|frustrat\w*|wrong|broken|again|seriously|useless|slow|tiny|awful|terrible)\b", ("Annoyance", "Anger", "Disappointment")),
+            "excited": (r"\b(awesome|amazing|love|perfect|yes+|nice|great|wow|brilliant|excellent|let'?s go|fantastic|cool)\b", ("Excitement", "Joy", "Satisfaction")),
+            "confused": (r"\b(what|how|why|confus\w*|don'?t understand|huh|unclear|explain|mean)\b", ("Confusion", "Doubt", "Interest")),
+            "stressed": (r"\b(hurry|quick|urgent|deadline|now|asap|fast|panic)\b", ("Anxiety", "Determination", "Concentration")),
+        }
+        for mood, (pattern, names) in cues.items():
+            hits = len(re.findall(pattern, words))
+            if hits:
+                base = 0.35 + 0.15 * min(hits, 3) + 0.15 * energy
+                for i, name in enumerate(names):
+                    scores[name] = max(scores.get(name, 0.0), base - 0.12 * i)
+        if not any(re.search(p, words) for p, _ in cues.values()):
+            if energy > 0.85 and seconds < 2.5:
+                scores["Excitement"] = 0.3 + 0.25 * energy
+                scores["Determination"] = 0.22
+            elif energy > 0.8 and seconds >= 2.5:
+                scores["Annoyance"] = 0.28 + 0.25 * energy
+                scores["Determination"] = 0.22
+        return [{"name": n, "score": round(v, 3)} for n, v in scores.items()]
