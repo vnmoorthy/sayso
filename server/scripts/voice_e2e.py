@@ -72,7 +72,9 @@ class SpokenTrack(MediaStreamTrack):
         with wave.open(str(wav)) as w:
             assert w.getframerate() == SAMPLE_RATE and w.getnchannels() == 1, "need 16 kHz mono"
             data = w.readframes(w.getnframes())
-        self._pcm += data + b"\x00" * (SAMPLE_RATE * 2)  # a second of silence to close the turn
+        # 300 ms of lead-in so VAD/turn detection never clips the first syllable, then a
+        # second of silence to close the turn.
+        self._pcm += b"\x00" * int(SAMPLE_RATE * 0.3 * 2) + data + b"\x00" * (SAMPLE_RATE * 2)
         return len(data) / (SAMPLE_RATE * 2)
 
     async def recv(self) -> AudioFrame:

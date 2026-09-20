@@ -167,7 +167,7 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
     u = user.lower().strip()
     project, port = STATE["project"], STATE["port"]
 
-    if STATE["pending"] and re.search(r"\b(yes|yeah|yep|sure|approve|go ahead|do it|confirm|ok|okay)\b", u):
+    if STATE["pending"] and re.search(r"\b(yes|yeah|yep|yup|sure|approve|approved|go ahead|ahead|proceed|do it|confirm|ok|okay|please)\b", u):
         cid = STATE["pending"]
         STATE["pending"] = None
         return None, [("resolve_confirmation", {"id": cid, "approved": True})]
