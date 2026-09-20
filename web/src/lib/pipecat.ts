@@ -208,7 +208,9 @@ export class PipecatSession implements SaysoSession {
       return;
     }
     try {
-      await client.sendText(text, { run_immediately: true, audio_response: true });
+      // append-to-context runs the model directly; sendText's interrupt+flush path can stall
+      // when the bot was mid-utterance, leaving the message undelivered.
+      await client.appendToContext({ role: 'user', content: text, run_immediately: true });
     } catch (err) {
       this.dispatch({ type: 'toast', level: 'error', text: describeError(err, '') });
     }
