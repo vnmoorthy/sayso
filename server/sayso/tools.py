@@ -775,7 +775,12 @@ class Toolbox:
 
     def register(self, llm: Any) -> None:
         for name, fn in self.handlers().items():
-            llm.register_function(name, self._wrap(name, fn))
+            # Browser actions can take several seconds; a new utterance must not cancel them
+            # halfway through a Playwright call (that wedges the browser).
+            if name.startswith("browser_"):
+                llm.register_function(name, self._wrap(name, fn), cancel_on_interruption=False)
+            else:
+                llm.register_function(name, self._wrap(name, fn))
 
     def _wrap(self, name: str, fn: Callable[..., Awaitable[dict]]):
         sig = inspect.signature(fn)

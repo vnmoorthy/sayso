@@ -158,6 +158,43 @@ class BrowserController:
         self._page = None
         self._pw = None
 
+    # ------------------------------------------------------------------ guard
+
+    async def _guarded(self, action: str, coro_factory):
+        """Run one browser action: bounded lock wait, shielded from task cancellation
+        (the Playwright call finishes on its own and only then frees the lock), and a
+        relaunch if the browser connection died underneath us."""
+        try:
+            await asyncio.wait_for(self._lock.acquire(), 30)
+        except asyncio.TimeoutError:
+            return {"ok": False, "error": "the browser is still busy with the previous action — try again in a moment", "summary": "browser busy"}
+        inner = asyncio.ensure_future(coro_factory())
+        released = False
+
+        def _release(_task=None):
+            nonlocal released
+            if not released:
+                released = True
+                self._lock.release()
+            if _task is not None and not _task.cancelled() and _task.exception():
+                logger.debug(f"browser {action} finished after cancellation: {_task.exception()}")
+
+        try:
+            result = await asyncio.shield(inner)
+        except asyncio.CancelledError:
+            inner.add_done_callback(_release)
+            raise
+        except Exception as exc:  # noqa: BLE001
+            text = str(exc)
+            if any(k in text for k in ("Target closed", "Connection closed", "has been closed", "Browser closed")):
+                logger.warning("Chrome connection lost; relaunching on next action")
+                self._page = None
+                self._browser = None
+            _release()
+            return {"ok": False, "error": text[:160], "summary": f"{action} failed"}
+        _release()
+        return result
+
     # ------------------------------------------------------------------ helpers
 
     async def _settle(self, page) -> None:
@@ -237,7 +274,7 @@ class BrowserController:
     # ------------------------------------------------------------------ actions
 
     async def open(self, url: str) -> dict[str, Any]:
-        async with self._lock:
+        async def run():
             page = await self._ensure()
             target = resolve_site(url)
             try:
@@ -247,8 +284,10 @@ class BrowserController:
             await self._settle(page)
             return await self._result(page, "open")
 
+        return await self._guarded("open", run)
+
     async def search(self, query: str) -> dict[str, Any]:
-        async with self._lock:
+        async def run():
             page = await self._ensure()
             url = "https://duckduckgo.com/?q=" + quote_plus(query) + "&ia=web"
             try:
@@ -258,8 +297,10 @@ class BrowserController:
             await self._settle(page)
             return await self._result(page, "search", query=query)
 
+        return await self._guarded("search", run)
+
     async def click(self, element_id: int | None = None, text: str | None = None) -> dict[str, Any]:
-        async with self._lock:
+        async def run():
             page = await self._ensure()
             try:
                 loc = await self._locator(page, element_id, text)
@@ -273,8 +314,10 @@ class BrowserController:
             await self._settle(page)
             return await self._result(page, "click", clicked=text or element_id)
 
+        return await self._guarded("click", run)
+
     async def type(self, text: str, element_id: int | None = None, field: str | None = None, press_enter: bool = True) -> dict[str, Any]:
-        async with self._lock:
+        async def run():
             page = await self._ensure()
             try:
                 if element_id is None and not field:
@@ -295,8 +338,10 @@ class BrowserController:
             await self._settle(page)
             return await self._result(page, "type", typed=text)
 
+        return await self._guarded("type", run)
+
     async def press(self, key: str) -> dict[str, Any]:
-        async with self._lock:
+        async def run():
             page = await self._ensure()
             try:
                 await page.keyboard.press(key)
@@ -305,16 +350,20 @@ class BrowserController:
             await self._settle(page)
             return await self._result(page, "press", key=key)
 
+        return await self._guarded("press", run)
+
     async def scroll(self, direction: str = "down", amount: int = 700) -> dict[str, Any]:
-        async with self._lock:
+        async def run():
             page = await self._ensure()
             dy = -abs(amount) if str(direction).lower().startswith("u") else abs(amount)
             await page.mouse.wheel(0, dy)
             await asyncio.sleep(0.5)
             return await self._result(page, "scroll", direction=direction)
 
+        return await self._guarded("scroll", run)
+
     async def back(self) -> dict[str, Any]:
-        async with self._lock:
+        async def run():
             page = await self._ensure()
             try:
                 await page.go_back(wait_until="domcontentloaded", timeout=15000)
@@ -323,7 +372,11 @@ class BrowserController:
             await self._settle(page)
             return await self._result(page, "back")
 
+        return await self._guarded("back", run)
+
     async def read(self) -> dict[str, Any]:
-        async with self._lock:
+        async def run():
             page = await self._ensure()
             return await self._result(page, "read")
+
+        return await self._guarded("read", run)
