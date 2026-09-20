@@ -246,7 +246,7 @@ sayso/
 
 ## Hackathon
 
-**Pitch deck:** [`docs/deck/Sayso.pptx`](docs/deck/Sayso.pptx) · **3-minute demo storyboard:** [`docs/DEMO_STORYBOARD.md`](docs/DEMO_STORYBOARD.md) · **Live mock:** <https://vnmoorthy.github.io/sayso/?mock=1>
+**Demo video:** [`docs/video/Sayso-demo.mp4`](docs/video/Sayso-demo.mp4) (screen recording of the live app; rebuild with `docs/video/record.py` + `assemble.sh`) · **Pitch deck:** [`docs/deck/Sayso.pptx`](docs/deck/Sayso.pptx) · **3-minute demo storyboard:** [`docs/DEMO_STORYBOARD.md`](docs/DEMO_STORYBOARD.md) · **Live mock:** <https://vnmoorthy.github.io/sayso/?mock=1>
 
 Built at the **AGI House SF Voice AI Hackathon**, September 19, 2026 — [agihouse.ai/voiceaihackathon](https://agihouse.ai/voiceaihackathon).
 
