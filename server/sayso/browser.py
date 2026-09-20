@@ -97,6 +97,9 @@ def resolve_site(name: str) -> str:
     """Turn 'hacker news', 'github.com', 'https://…' into a URL."""
     n = (name or "").strip().strip('"\'.,!?').lower()
     n = re.sub(r"^(the\s+)?(website\s+|site\s+)?", "", n)
+    n = re.sub(r"\s+dot\s+", ".", n)  # spoken "github dot com"
+    n = re.sub(r"\s+slash\s+", "/", n)
+    n = n.replace(" ", "") if re.match(r"^[\w-]+(\s+[\w-]+)*\.(com|org|net|io|ai|dev|co)$", n) else n
     if n in KNOWN_SITES:
         return KNOWN_SITES[n]
     for key, url in KNOWN_SITES.items():

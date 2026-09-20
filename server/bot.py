@@ -178,7 +178,7 @@ def build_llm():
             base_url=SETTINGS.llm_base_url,
             settings=SambaNovaLLMService.Settings(model=SETTINGS.llm_model, **common),
         )
-    label = {"general_compute": "General Compute", "openai": "OpenAI", "demo": "demo brain"}[SETTINGS.llm_provider]
+    label = {"general_compute": "General Compute", "openai": "OpenAI", "demo": "demo brain", "local": "local MLX model"}.get(SETTINGS.llm_provider, SETTINGS.llm_provider)
     logger.info(f"LLM: {label} {SETTINGS.llm_model} @ {SETTINGS.llm_base_url or 'default'}")
     kwargs = {"api_key": SETTINGS.llm_api_key}
     if SETTINGS.llm_base_url:

@@ -132,6 +132,26 @@ def _port_from(text: str) -> int:
     return int(m.group(1)) if m else STATE["port"]
 
 
+_LEAD = re.compile(
+    r"^(?:(?:hey|hi|hello|ok|okay|yo|um|uh|so|now|then|next|and|also|alright|right)[,\s]+)*"
+    r"(?:(?:sayso|say so|say-so|siri|hey sayso)[,\s]+)?"
+    r"(?:(?:please|can you|could you|would you|will you|i want you to|i need you to|i'd like you to|let'?s|go ahead and|just|kindly)[,\s]+)*",
+    re.IGNORECASE,
+)
+
+
+def _normalize(text: str) -> str:
+    """Lower-case, strip filler/politeness/wake words and trailing punctuation."""
+    t = (text or "").strip().lower()
+    t = re.sub(r"[\u2018\u2019]", "'", t)
+    t = _LEAD.sub("", t).strip(" .!?,")
+    t = re.sub(r"\s+(please|for me|right now|now|thanks|thank you)$", "", t).strip(" .!?,")
+    # spoken numbers that matter for ports
+    t = re.sub(r"\beight thousand\b", "8000", t)
+    t = re.sub(r"\b(\d),(\d{3})\b", r"\1\2", t)
+    return t
+
+
 def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
     """Return (text, tool_calls) for the next assistant turn."""
     tone = _tone(messages)
@@ -170,7 +190,7 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
                 "Hey, I'm Sayso. I run your terminal, files, browser and GitHub by voice. Give me a task.",
                 [],
             )
-    u = user.lower().strip()
+    u = _normalize(user)
     project, port = STATE["project"], STATE["port"]
 
     if STATE["pending"] and re.search(r"\b(yes|yeah|yep|yup|sure|approve|approved|go ahead|ahead|proceed|do it|confirm|ok|okay|please)\b", u):
@@ -219,7 +239,7 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
     if re.search(r"\b(read|what'?s on|what is on|summari[sz]e|describe|tell me about)\b.*\b(page|screen|site|it|this)\b", u) and STATE.get("browsing"):
         return None, [("browser_read", {})]
 
-    if re.search(r"\b(create|make|build|scaffold|generate|new)\b.*\b(app|site|page|project|clock|website)\b", u):
+    if re.search(r"\b(create|make|build|scaffold|generate|new|start|spin up|set up|setup|write)\b.*\b(app|site|page|project|clock|website|web page|webpage|landing page|server)\b", u):
         project = _name_from(u)
         port = _port_from(u) if re.search(r"\bport\b|\d{4,5}", u) else STATE["port"]
         STATE.update(project=project, port=port, fixed=False)
@@ -249,10 +269,10 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
     if re.search(r"\b(open|show|preview|display)\b.*\b(browser|it|page|site|localhost|app)\b", u) or "localhost" in u:
         return None, [("open_url", {"url": f"http://localhost:{port}", "title": project})]
 
-    if re.search(r"\b(test|tests|pytest|unittest)\b", u) and re.search(r"\b(run|execute|do|check)\b", u):
+    if re.search(r"\b(test|tests|testing|pytest|unittest|test suite)\b", u) and (re.search(r"\b(run|execute|do|check|start|kick off|launch)\b", u) or u.strip() in ("tests", "test", "test it")):
         return None, [("run_shell", {"command": f"cd {project} && python3 test_app.py"})]
 
-    if re.search(r"\bfix\b|\bmake (it|them|the tests?) pass\b|\brepair\b", u):
+    if re.search(r"\bfix\b|\bmake (it|them|the tests?) pass\b|\brepair\b|\bsolve\b|\bcorrect\b|\bresolve\b|\bpatch\b", u):
         STATE["fixed"] = True
         huge = "huge" in u or "big" in u or "neon" in u or STATE.get("huge")
         return None, [
@@ -283,9 +303,11 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
         target = "test_app.py" if "test" in u else "index.html"
         return None, [("read_file", {"path": f"{project}/{target}"})]
 
-    if re.search(r"\b(delete|remove|wipe|clean|rm|nuke|clear)\b", u):
-        m = re.search(r"(?:delete|remove|wipe|clean|rm|nuke|clear)\s+(?:the\s+)?([a-zA-Z0-9_./-]+)", u)
+    if re.search(r"\b(delete|remove|wipe|clean|rm|nuke|clear|get rid of|trash|destroy)\b", u):
+        m = re.search(r"(?:delete|remove|wipe|clean|rm|nuke|clear|get rid of|trash|destroy)\s+(?:the\s+)?([a-zA-Z0-9_./-]+)", u)
         target = m.group(1) if m else "build"
+        if target in ("it", "that", "this", "app", "project", "folder", "directory"):
+            target = project
         if target in ("workspace", "everything", "all"):
             return None, [("reset_workspace", {})]
         return None, [("run_shell", {"command": f"rm -rf {target}"})]
@@ -301,8 +323,8 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
         return None, [("fetch_url", {"url": url})]
 
     return (
-        f"{_prefix(tone)}I heard: {user.strip()[:80]}. I can create and run apps, edit files, run tests, open the "
-        "browser, and file GitHub issues. Try: create a web app called pulse with a live clock and run it on port 8000.",
+        f"{_prefix(tone)}I'm running in scripted demo mode without a language model, so I didn't catch that one. "
+        "Try: open Hacker News, search for something, create a web app and run it, run the tests, or delete a folder.",
         [],
     )
 

@@ -86,6 +86,12 @@ def load_settings() -> Settings:
         s.llm_base_url = _env("GENERAL_COMPUTE_BASE_URL", "https://api.generalcompute.com/v1")
         s.llm_models = list(GENERAL_COMPUTE_MODELS)
         s.llm_model = _env("SAYSO_MODEL", GENERAL_COMPUTE_MODELS[0]) or GENERAL_COMPUTE_MODELS[0]
+    elif forced == "local" or (not forced and _env("LOCAL_LLM_URL")):
+        s.llm_provider = "local"
+        s.llm_api_key = "local"
+        s.llm_base_url = _env("LOCAL_LLM_URL", "http://127.0.0.1:8081/v1")
+        s.llm_model = _env("SAYSO_MODEL", "mlx-community/Qwen2.5-7B-Instruct-4bit") or "mlx-community/Qwen2.5-7B-Instruct-4bit"
+        s.llm_models = [s.llm_model]
     elif forced == "openai" or (not forced and oa_key):
         s.llm_provider = "openai"
         s.llm_api_key = oa_key
