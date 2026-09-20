@@ -135,6 +135,12 @@ def _port_from(text: str) -> int:
 def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
     """Return (text, tool_calls) for the next assistant turn."""
     tone = _tone(messages)
+    # Tone notes (system) can land after a tool result or after our own reply; they never
+    # start a new request. Look past them when deciding what this run is about.
+    while len(messages) > 1 and messages[-1].get("role") in ("system", "developer") and _content_text(
+        messages[-1].get("content")
+    ).lstrip().startswith("[User tone:"):
+        messages = messages[:-1]
     last = messages[-1]
 
     if last.get("role") == "tool":
