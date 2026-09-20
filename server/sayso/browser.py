@@ -67,6 +67,10 @@ SNAPSHOT_JS = r"""
 KNOWN_SITES = {
     "hacker news": "https://news.ycombinator.com",
     "hackernews": "https://news.ycombinator.com",
+    "hackernews.com": "https://news.ycombinator.com",
+    "hacker-news": "https://news.ycombinator.com",
+    "ycombinator": "https://news.ycombinator.com",
+    "hn": "https://news.ycombinator.com",
     "google": "https://www.google.com",
     "youtube": "https://www.youtube.com",
     "github": "https://github.com",
