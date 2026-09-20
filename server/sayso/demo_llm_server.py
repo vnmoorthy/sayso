@@ -185,6 +185,34 @@ def decide(messages: list[dict]) -> tuple[str | None, list[tuple[str, dict]]]:
             [],
         )
 
+    # ---- generic browser control (works keyless; any site, any query) ----
+    m = re.match(r"^(?:please\s+)?(?:open|go to|goto|visit|navigate to|take me to|show me|pull up|load)\s+(.+?)[.!?]*$", u)
+    if m and not re.search(r"^(it|this|that|the app|the site|the page|my app|the clock)\b|\bbrowser panel\b|\bin the browser\b|localhost", m.group(1)):
+        return None, [("browser_open", {"url": m.group(1).strip()})]
+    m = re.match(r"^(?:please\s+)?(?:search|google|look up|lookup|find|search for|look for)\s+(?:for\s+)?(.+?)[.!?]*$", u)
+    if m and not re.search(r"\b(files?|folder|workspace)\b", m.group(1)):
+        return None, [("browser_search", {"query": m.group(1).strip()})]
+    m = re.match(r"^(?:please\s+)?(?:click|press|tap|select|choose|hit|open)\s+(?:on\s+)?(?:the\s+)?(?:link\s+|button\s+)?(?:number\s+)?(\d+)(?:st|nd|rd|th)?(?:\s+(?:link|result|button|item|story|one))?[.!?]*$", u)
+    if m:
+        return None, [("browser_click", {"element_id": int(m.group(1))})]
+    m = re.match(r"^(?:please\s+)?(?:click|press|tap|select|choose|hit)\s+(?:on\s+)?(?:the\s+)?(.+?)(?:\s+(?:link|button))?[.!?]*$", u)
+    if m and STATE.get("browsing"):
+        target = m.group(1).strip()
+        ordinal = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5, "top": 1}
+        words = target.split()
+        if words and words[0] in ordinal:
+            return None, [("browser_click", {"element_id": _nth_link(ordinal[words[0]])})]
+        return None, [("browser_click", {"text": target})]
+    m = re.match(r"^(?:please\s+)?(?:type|enter|write|input|put)\s+[\"“']?(.+?)[\"”']?(?:\s+(?:in|into|in the|into the)\s+(.+?))?(?:\s+and\s+(?:press|hit)\s+enter)?[.!?]*$", u)
+    if m and STATE.get("browsing"):
+        return None, [("browser_type", {"text": m.group(1).strip(), "field": (m.group(2) or "").strip() or None, "press_enter": True})]
+    if re.search(r"^(?:please\s+)?(?:scroll|page)\s*(down|up)?", u) and STATE.get("browsing"):
+        return None, [("browser_scroll", {"direction": "up" if re.search(r"\bup\b", u) else "down"})]
+    if re.match(r"^(?:please\s+)?(?:go\s+)?back[.!?]*$", u) and STATE.get("browsing"):
+        return None, [("browser_back", {})]
+    if re.search(r"\b(read|what'?s on|what is on|summari[sz]e|describe|tell me about)\b.*\b(page|screen|site|it|this)\b", u) and STATE.get("browsing"):
+        return None, [("browser_read", {})]
+
     if re.search(r"\b(create|make|build|scaffold|generate|new)\b.*\b(app|site|page|project|clock|website)\b", u):
         project = _name_from(u)
         port = _port_from(u) if re.search(r"\bport\b|\d{4,5}", u) else STATE["port"]
@@ -291,6 +319,8 @@ def _infer_name(payload: dict) -> str:
         return "github_create_issue"
     if "stargazerCount" in payload:
         return "github_repo_info"
+    if "elements" in payload and "title" in payload:
+        return "browser_read"
     if "url" in payload and "text" in payload:
         return "fetch_url"
     if "url" in payload:
@@ -298,6 +328,33 @@ def _infer_name(payload: dict) -> str:
     if "stopped" in payload or payload.get("summary", "").startswith("stopped"):
         return "stop_background"
     return ""
+
+
+def _nth_link(n: int) -> int:
+    """Element id of the n-th link-like element from the last browser read (fallback: n)."""
+    elements = (STATE.get("last_page") or {}).get("elements") or []
+    links = [e for e in elements if e.get("role") in ("link", "button") and e.get("text")]
+    if len(links) >= n:
+        return int(links[n - 1]["id"])
+    return n
+
+
+def _page_summary(payload: dict, verb: str) -> str:
+    STATE["browsing"] = True
+    STATE["last_page"] = payload
+    title = (payload.get("title") or "").strip() or "the page"
+    text = (payload.get("text") or "").strip().replace("\n", " ")
+    elements = payload.get("elements") or []
+    links = [e["text"] for e in elements if e.get("role") == "link" and e.get("text")]
+    if not payload.get("ok", True):
+        return f"I couldn't do that: {payload.get('error', 'the page did not respond')}. The page is on your screen."
+    lead = f"{verb} {title}."
+    if links:
+        top = "; ".join(l[:60] for l in links[:3])
+        lead += f" Top links: {top}."
+    elif text:
+        lead += f" It starts with: {text[:160]}."
+    return lead
 
 
 def _summarize(messages: list[dict], tone: str) -> str:
@@ -378,6 +435,16 @@ def _summarize(messages: list[dict], tone: str) -> str:
             parts.append(f"Got it. It starts with: {text}")
         elif name == "reset_workspace":
             parts.append(payload.get("summary", "Workspace reset."))
+        elif name == "browser_open":
+            parts.append(_page_summary(payload, "Opened"))
+        elif name == "browser_search":
+            parts.append(_page_summary(payload, f"Here are results for {payload.get('query', 'that')}:"))
+        elif name == "browser_click":
+            parts.append(_page_summary(payload, f"Clicked {payload.get('clicked', 'it')}. Now on"))
+        elif name == "browser_type":
+            parts.append(_page_summary(payload, f"Typed {payload.get('typed', 'it')}. Now on"))
+        elif name in ("browser_scroll", "browser_read", "browser_back", "browser_press"):
+            parts.append(_page_summary(payload, "Now on"))
         elif not ok:
             parts.append(f"{name or 'that'} failed: {payload.get('error', '')[:100]}")
     if not parts:

@@ -26,6 +26,7 @@ from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.services.llm_service import FunctionCallParams
 
+from .browser import BrowserController
 from .bus import emit
 from .config import Settings
 
@@ -66,7 +67,7 @@ LANG_BY_EXT = {
     ".rs": "rust", ".java": "java", ".rb": "ruby", ".c": "c", ".cpp": "cpp", ".swift": "swift",
 }
 
-MAX_RESULT_CHARS = 3000
+MAX_RESULT_CHARS = 3600
 
 
 def classify_command(command: str) -> str | None:
@@ -93,7 +94,7 @@ def _short_result(result: dict) -> dict:
     out: dict[str, Any] = {}
     for key, value in result.items():
         if isinstance(value, str):
-            out[key] = _clip(value, 1500)
+            out[key] = _clip(value, 3400 if key in ("text", "content", "stdout") else 1500)
         else:
             out[key] = value
     return out
@@ -258,6 +259,7 @@ class Toolbox:
         self.procs = ProcessManager(settings)
         self.pending: dict[str, dict] = {}  # confirmation id -> {command, reason, kind}
         self.seen_files: set[str] = set()
+        self.browser = BrowserController()
 
     # ---- helpers -----------------------------------------------------------------
 
@@ -512,6 +514,32 @@ class Toolbox:
         info["summary"] = f"{info.get('nameWithOwner')} · {info.get('stargazerCount', 0)} stars"
         return info
 
+    # ---- real Chrome ------------------------------------------------------------------------------
+
+    async def browser_open(self, tool_id: str, url: str) -> dict:
+        return await self.browser.open(url)
+
+    async def browser_search(self, tool_id: str, query: str) -> dict:
+        return await self.browser.search(query)
+
+    async def browser_click(self, tool_id: str, element_id: int | None = None, text: str | None = None) -> dict:
+        return await self.browser.click(element_id=element_id, text=text)
+
+    async def browser_type(self, tool_id: str, text: str, element_id: int | None = None, field: str | None = None, press_enter: bool = True) -> dict:
+        return await self.browser.type(text, element_id=element_id, field=field, press_enter=press_enter)
+
+    async def browser_press(self, tool_id: str, key: str) -> dict:
+        return await self.browser.press(key)
+
+    async def browser_scroll(self, tool_id: str, direction: str = "down", amount: int = 700) -> dict:
+        return await self.browser.scroll(direction, amount)
+
+    async def browser_back(self, tool_id: str) -> dict:
+        return await self.browser.back()
+
+    async def browser_read(self, tool_id: str) -> dict:
+        return await self.browser.read()
+
     # ---- confirmations & workspace -----------------------------------------------------------
 
     async def resolve_confirmation(self, tool_id: str, id: str, approved: bool = True) -> dict:
@@ -641,6 +669,67 @@ class Toolbox:
                 required=[],
             ),
             fs(
+                name="browser_open",
+                description="Open a website in the agent's real Chrome window. Accepts a URL or a site name "
+                "('hacker news', 'github.com'). Returns the page title, visible text and a numbered list of "
+                "clickable elements and inputs; a screenshot is shown to the user automatically.",
+                properties={"url": {"type": "string", "description": "URL or well-known site name"}},
+                required=["url"],
+            ),
+            fs(
+                name="browser_search",
+                description="Web-search a query in the agent's Chrome (DuckDuckGo) and return the results page.",
+                properties={"query": {"type": "string", "description": "What to search for"}},
+                required=["query"],
+            ),
+            fs(
+                name="browser_click",
+                description="Click an element on the current page, by its id from the last page read or by its visible text.",
+                properties={
+                    "element_id": {"type": "integer", "description": "Element id from the numbered list"},
+                    "text": {"type": "string", "description": "Visible text / label of the link or button"},
+                },
+                required=[],
+            ),
+            fs(
+                name="browser_type",
+                description="Type into a field (search box, form input) on the current page and optionally press Enter.",
+                properties={
+                    "text": {"type": "string", "description": "Text to type"},
+                    "element_id": {"type": "integer", "description": "Input id from the numbered list (optional; defaults to the first visible input)"},
+                    "field": {"type": "string", "description": "Placeholder/label text of the field (optional)"},
+                    "press_enter": {"type": "boolean", "description": "Press Enter after typing (default true)"},
+                },
+                required=["text"],
+            ),
+            fs(
+                name="browser_press",
+                description="Press a keyboard key in the browser, e.g. Enter, Escape, PageDown.",
+                properties={"key": {"type": "string", "description": "Key name"}},
+                required=["key"],
+            ),
+            fs(
+                name="browser_scroll",
+                description="Scroll the current page up or down to reveal more content, then return the fresh page read.",
+                properties={
+                    "direction": {"type": "string", "description": "'down' or 'up'"},
+                    "amount": {"type": "integer", "description": "Pixels (default 700)"},
+                },
+                required=[],
+            ),
+            fs(
+                name="browser_back",
+                description="Go back to the previous page in the agent's Chrome.",
+                properties={},
+                required=[],
+            ),
+            fs(
+                name="browser_read",
+                description="Re-read the current page (title, text, numbered elements) — use after the page changed or before clicking by id.",
+                properties={},
+                required=[],
+            ),
+            fs(
                 name="resolve_confirmation",
                 description="Approve or deny a pending destructive command after the user says yes or no.",
                 properties={
@@ -670,6 +759,14 @@ class Toolbox:
             "fetch_url": self.fetch_url,
             "github_create_issue": self.github_create_issue,
             "github_repo_info": self.github_repo_info,
+            "browser_open": self.browser_open,
+            "browser_search": self.browser_search,
+            "browser_click": self.browser_click,
+            "browser_type": self.browser_type,
+            "browser_press": self.browser_press,
+            "browser_scroll": self.browser_scroll,
+            "browser_back": self.browser_back,
+            "browser_read": self.browser_read,
             "resolve_confirmation": self.resolve_confirmation,
             "reset_workspace": self.reset_workspace,
         }

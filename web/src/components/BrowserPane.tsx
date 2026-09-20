@@ -8,6 +8,7 @@ export function BrowserPane({
   title,
   nonce,
   mock,
+  shot,
   onNavigate,
   onRefresh,
 }: {
@@ -15,6 +16,7 @@ export function BrowserPane({
   title?: string;
   nonce: number;
   mock: boolean;
+  shot?: { image: string; url: string; title?: string; action?: string; ts: number } | null;
   onNavigate: (url: string) => void;
   onRefresh: () => void;
 }) {
@@ -75,7 +77,20 @@ export function BrowserPane({
         </div>
       )}
       <div className="relative min-h-0 flex-1 bg-surface-2">
-        {url ? (
+        {shot ? (
+          <div className="relative h-full w-full overflow-auto bg-black">
+            <img
+              src={shot.image}
+              alt={shot.title ?? shot.url}
+              className="block w-full select-none"
+              draggable={false}
+            />
+            <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-lime/30 bg-black/70 px-2.5 py-1 text-[11px] text-lime backdrop-blur">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-lime" />
+              Sayso&apos;s Chrome · live{shot.action ? ` · ${shot.action}` : ''}
+            </div>
+          </div>
+        ) : url ? (
           <iframe
             key={`${url}#${nonce}`}
             src={url}

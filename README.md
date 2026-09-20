@@ -56,6 +56,9 @@ Sayso is a developer agent you operate with your voice. It runs on a [Pipecat](h
 
 ## Features
 
+**Drives a real Chrome.** Say "open Hacker News", "search for the cheapest M4 MacBook", "click the second result", "type my name into the form", "scroll down", "what does the page say?" — Sayso operates its own Google Chrome through Playwright. Every browser tool returns the page as text plus a numbered list of clickable elements and inputs, so the model can chain search → open → read → fill out of the box, and each step streams a live screenshot into the app's Browser pane. Tools: `browser_open`, `browser_search`, `browser_click`, `browser_type`, `browser_press`, `browser_scroll`, `browser_back`, `browser_read`. Set `SAYSO_BROWSER_HEADLESS=0` to watch the Chrome window itself.
+
+
 **Voice**
 - Full-duplex, browser-to-server WebRTC audio via Pipecat's SmallWebRTC transport; Silero VAD and smart-turn v3 end-of-turn detection so you can speak naturally.
 - STT from Gradium or Deepgram, with local Whisper (MLX on Apple Silicon) as a keyless fallback.

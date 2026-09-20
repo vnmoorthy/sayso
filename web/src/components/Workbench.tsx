@@ -150,6 +150,7 @@ export function Workbench({
             <Pane active={state.tab === 'browser'}>
               <BrowserPane
                 url={state.browserUrl}
+                shot={state.browserShot}
                 title={state.browserTitle}
                 nonce={state.browserNonce}
                 mock={state.mock}

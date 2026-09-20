@@ -16,7 +16,8 @@ export type ServerMessage =
  | { type: 'github_event'; kind: 'issue'|'pr'|'repo'; url: string; number?: number; title: string }
  | { type: 'process'; name: string; pid?: number; state: 'started'|'exited'|'stopped'; command: string; port?: number }
  | { type: 'workspace'; tree: string[] }
- | { type: 'notice'; level: 'info'|'warn'|'error'; text: string };
+ | { type: 'notice'; level: 'info'|'warn'|'error'; text: string }
+ | { type: 'browser_frame'; image: string; url: string; title?: string; action?: string; ts: number };
 
 // ---------------------------------------------------------------------------
 // Helpers derived from the contract (additive; the union above is untouched).

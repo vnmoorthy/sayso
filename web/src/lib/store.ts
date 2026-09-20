@@ -155,6 +155,8 @@ export interface State {
   browserUrl: string | null;
   browserTitle?: string;
   browserNonce: number;
+  /** Latest screenshot from the agent's own Chrome (null → the iframe shows browserUrl). */
+  browserShot: { image: string; url: string; title?: string; action?: string; ts: number } | null;
   tab: WorkbenchTab;
   tabPinnedAt: number;
   confirms: ConfirmRequest[];
@@ -220,6 +222,7 @@ export const initialState: State = {
   selectedFile: null,
   browserUrl: null,
   browserNonce: 0,
+  browserShot: null,
   tab: 'terminal',
   tabPinnedAt: 0,
   confirms: [],
@@ -430,7 +433,18 @@ function reduceServer(s: State, msg: ServerMessage): State {
 
     case 'open_url':
       return autoTab(
-        { ...s, browserUrl: msg.url, browserTitle: msg.title, browserNonce: s.browserNonce + 1 },
+        { ...s, browserUrl: msg.url, browserTitle: msg.title, browserNonce: s.browserNonce + 1, browserShot: null },
+        'browser',
+      );
+
+    case 'browser_frame':
+      return autoTab(
+        {
+          ...s,
+          browserShot: { image: msg.image, url: msg.url, title: msg.title, action: msg.action, ts: msg.ts },
+          browserUrl: msg.url,
+          browserTitle: msg.title,
+        },
         'browser',
       );
 
@@ -644,6 +658,7 @@ export function reducer(s: State, a: Action): State {
       return { ...s, selectedFile: a.path };
 
     case 'browser_navigate':
+      if (s.browserShot) return { ...s, browserShot: null, browserUrl: a.url, browserTitle: undefined, browserNonce: s.browserNonce + 1 };
       return { ...s, browserUrl: a.url, browserTitle: undefined, browserNonce: s.browserNonce + 1 };
 
     case 'browser_refresh':

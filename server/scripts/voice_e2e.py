@@ -36,6 +36,8 @@ UTTERANCES = [
     ("Fix it", {"write_file", "run_shell"}),
     ("Delete the pulse folder", {"run_shell"}),
     ("Yes, go ahead", {"resolve_confirmation"}),
+    ("Open hacker news", {"browser_open"}),
+    ("Search for pipecat voice agents", {"browser_search"}),
 ]
 SAMPLE_RATE = 16000
 FRAME = int(SAMPLE_RATE * 0.02)  # 20 ms
