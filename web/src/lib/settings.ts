@@ -10,6 +10,8 @@ export interface Settings {
   showHud: boolean;
   /** Small Web Audio cues: connect chime, tool tick/thud, say-so tone. */
   soundCues: boolean;
+  /** Keep the mic muted and open it only while Space is held (for loud rooms). */
+  pushToTalk: boolean;
 }
 
 const KEY = 'sayso.settings.v1';
@@ -24,6 +26,7 @@ export const defaultSettings: Settings = {
   browserTts: true,
   showHud: true,
   soundCues: true,
+  pushToTalk: false,
 };
 
 export function loadSettings(): Settings {

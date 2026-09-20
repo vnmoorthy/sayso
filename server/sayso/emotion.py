@@ -103,9 +103,11 @@ class HumeEmotionProcessor(FrameProcessor):
         enabled: bool,
         fake: bool = False,
         tts_settings_cls: Any | None = None,
+        tts_service: Any | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
+        self._tts_service = tts_service
         self._api_key = api_key
         self._enabled = enabled and bool(api_key)
         self._fake = fake and not self._enabled
@@ -205,7 +207,9 @@ class HumeEmotionProcessor(FrameProcessor):
         # Retune the voice (Hume Octave acting instructions) when the mood shifts.
         if self._tts_settings_cls is not None and mood != self._last_mood:
             try:
-                await self.push_frame(TTSUpdateSettingsFrame(delta=self._tts_settings_cls(description=style)))
+                await self.push_frame(
+                    TTSUpdateSettingsFrame(delta=self._tts_settings_cls(description=style), service=self._tts_service)
+                )
             except Exception as exc:  # noqa: BLE001
                 logger.debug(f"TTS settings update skipped: {exc}")
         self._last_mood = mood

@@ -131,8 +131,14 @@ export class PipecatSession implements SaysoSession {
         onError: guard((message: RTVIMessage) => {
           const data = (message?.data ?? {}) as ErrorPayload;
           const text = data.error ?? data.message ?? 'Something went wrong on the server';
-          d({ type: 'toast', level: 'error', text });
-          if (data.fatal) d({ type: 'connection', state: 'error', error: text });
+          if (data.fatal) {
+            d({ type: 'toast', level: 'error', text: text.slice(0, 160) });
+            d({ type: 'connection', state: 'error', error: text });
+            return;
+          }
+          // Non-fatal provider hiccups (a rate-limited TTS sentence, an STT reconnect) are
+          // handled by the server's failover; keep them out of the user's face.
+          console.warn('[sayso] server reported a recoverable error:', text.slice(0, 300));
         }),
         onDeviceError: guard((err: DeviceError) =>
           d({ type: 'toast', level: 'error', text: `Microphone: ${err.message || err.type}` }),

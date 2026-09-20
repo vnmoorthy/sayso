@@ -38,7 +38,16 @@ from pipecat.audio.vad.silero import SileroVADAnalyzer  # noqa: E402
 
 logger.info("Loading pipeline components…")
 import httpx  # noqa: E402
-from pipecat.frames.frames import LLMMessagesAppendFrame, LLMRunFrame, LLMUpdateSettingsFrame, TTSUpdateSettingsFrame  # noqa: E402
+from pipecat.frames.frames import (  # noqa: E402
+    ErrorFrame,
+    LLMMessagesAppendFrame,
+    LLMRunFrame,
+    LLMUpdateSettingsFrame,
+    ManuallySwitchServiceFrame,
+    TTSUpdateSettingsFrame,
+)
+from pipecat.observers.base_observer import BaseObserver, FramePushed  # noqa: E402
+from pipecat.pipeline.service_switcher import ServiceSwitcher, ServiceSwitcherStrategyFailover  # noqa: E402
 from pipecat.pipeline.pipeline import Pipeline  # noqa: E402
 from pipecat.pipeline.task import PipelineParams  # noqa: E402
 from pipecat.pipeline.worker import PipelineWorker  # noqa: E402
@@ -229,6 +238,40 @@ async def build_tts():
     return tts, voices, voice_id
 
 
+class TTSFailoverObserver(BaseObserver):
+    """Hand the voice to the local Kokoro model when the cloud voice can't deliver.
+
+    Cloud TTS can rate-limit (429), reject a key, or finish a sentence with no audio in the
+    middle of a demo. Any of those from the primary voice flips the ServiceSwitcher to the
+    fallback so the agent never goes silent; the UI is told what happened.
+    """
+
+    TRIGGERS = ("429", "quota", "rate limit", "too many requests", "no audio", "401", "402", "403")
+
+    def __init__(self, *, primary, fallback, queue_frame, on_switch, **kwargs):
+        super().__init__(**kwargs)
+        self._primary = primary
+        self._fallback = fallback
+        self._queue_frame = queue_frame
+        self._on_switch = on_switch
+        self._switched = False
+
+    async def on_push_frame(self, data: FramePushed):
+        frame = data.frame
+        if self._switched or not isinstance(frame, ErrorFrame) or frame.fatal:
+            return
+        origin = getattr(frame, "processor", None) or data.source
+        if origin is not self._primary:
+            return
+        text = str(frame.error).lower()
+        if not any(trigger in text for trigger in self.TRIGGERS):
+            return
+        self._switched = True
+        logger.warning(f"Cloud voice unavailable ({text[:80]}…) → switching to the local Kokoro voice")
+        await self._queue_frame(ManuallySwitchServiceFrame(service=self._fallback))
+        await self._on_switch()
+
+
 # --------------------------------------------------------------------------------------
 # Pipeline
 # --------------------------------------------------------------------------------------
@@ -241,7 +284,23 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     stt = build_stt()
     llm = build_llm()
     tts, voices, voice_id = await build_tts()
-    current = {"model": SETTINGS.llm_model, "voice": voice_id}
+    current = {"model": SETTINGS.llm_model, "voice": voice_id, "tts": SETTINGS.tts_provider if tts is not None else "browser"}
+
+    # Local fallback voice behind the cloud voice: quota/rate-limit/no-audio → Kokoro.
+    fallback_tts = None
+    if tts is not None and SETTINGS.tts_provider == "hume":
+        try:
+            from pipecat.services.kokoro.tts import KokoroTTSService
+
+            fallback_tts = KokoroTTSService(
+                settings=KokoroTTSService.Settings(voice=os.getenv("KOKORO_VOICE", "af_heart"), speed=1.05)
+            )
+            voices = voices + KOKORO_VOICES
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"No local fallback voice ({exc})")
+    tts_stage = tts
+    if fallback_tts is not None:
+        tts_stage = ServiceSwitcher([tts, fallback_tts], strategy_type=ServiceSwitcherStrategyFailover)
 
     toolbox.register(llm)
 
@@ -254,6 +313,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         enabled=SETTINGS.emotion_enabled,
         fake=SETTINGS.fake_emotion or os.getenv("SAYSO_EMOTION", "1") != "0",
         tts_settings_cls=tts_settings_cls,
+        tts_service=tts if tts_settings_cls else None,
     )
     stats = LLMStatsProcessor(model_getter=lambda: current["model"])
 
@@ -264,15 +324,37 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     )
 
     processors = [transport.input(), rtvi, stt, emotion, user_aggregator, llm, stats]
-    if tts is not None:
-        processors.append(tts)
+    if tts_stage is not None:
+        processors.append(tts_stage)
     processors += [transport.output(), assistant_aggregator]
     pipeline = Pipeline(processors)
+
+    observers = [RTVIObserver(rtvi)]
+
+    async def on_voice_switched() -> None:
+        current["tts"] = "kokoro"
+        await bus.emit({"type": "notice", "level": "warn", "text": "Hume voice rate-limited — switched to the local Kokoro voice"})
+        await send_status()
+
+    if fallback_tts is not None:
+        observers.append(
+            TTSFailoverObserver(
+                primary=tts,
+                fallback=fallback_tts,
+                queue_frame=lambda frame: task.queue_frame(frame),
+                on_switch=on_voice_switched,
+            )
+        )
+
+        @tts_stage.strategy.event_handler("on_service_switched")
+        async def on_service_switched(strategy, service):
+            current["tts"] = "kokoro" if service is fallback_tts else "hume"
+            await send_status()
 
     task = PipelineWorker(
         pipeline,
         params=PipelineParams(enable_metrics=True, enable_usage_metrics=True),
-        observers=[RTVIObserver(rtvi)],
+        observers=observers,
     )
 
     async def send_status() -> None:
@@ -282,7 +364,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
                 "mode": SETTINGS.mode,
                 "llm": {"provider": SETTINGS.llm_provider, "model": current["model"], "models": SETTINGS.llm_models},
                 "stt": SETTINGS.stt_provider,
-                "tts": (SETTINGS.tts_provider if tts is not None else "browser"),
+                "tts": current["tts"],
                 "emotion": emotion.active,
                 "workspace": str(SETTINGS.workspace),
                 "voices": voices,
@@ -330,7 +412,8 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
                 voice = str(data.get("voice", "")).strip()
                 if voice and tts is not None:
                     current["voice"] = voice
-                    await rtvi_processor.push_frame(TTSUpdateSettingsFrame(delta=type(tts).Settings(voice=voice)))
+                    target = fallback_tts if (fallback_tts is not None and voice.startswith(("af_", "am_", "bf_", "bm_"))) else tts
+                    await rtvi_processor.push_frame(TTSUpdateSettingsFrame(delta=type(target).Settings(voice=voice), service=target))
                     await bus.emit({"type": "notice", "level": "info", "text": "Voice updated"})
                     await send_status()
             elif mtype == "get_status":

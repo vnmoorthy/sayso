@@ -181,6 +181,11 @@ export function SettingsPopover({
                 />
                 <Toggle label="Show latency HUD" checked={settings.showHud} onChange={(v) => onChange({ showHud: v })} />
                 <Toggle
+                  label="Push-to-talk only (mic stays muted; hold Space to talk)"
+                  checked={settings.pushToTalk}
+                  onChange={(v) => onChange({ pushToTalk: v })}
+                />
+                <Toggle
                   label="Sound cues — connect chime, tool tick, say-so tone"
                   checked={settings.soundCues}
                   onChange={(v) => onChange({ soundCues: v })}

@@ -106,6 +106,12 @@ export default function App() {
     [session],
   );
 
+  // Push-to-talk only: keep the mic muted whenever we are connected; Space opens it.
+  useEffect(() => {
+    if (state.connection !== 'connected') return;
+    session.enableMic(!settings.pushToTalk);
+  }, [state.connection, settings.pushToTalk, session]);
+
   // "/" focuses the composer from anywhere. Holding Space while the mic is muted
   // is push-to-talk: the mic opens for as long as the key is held.
   const pttRef = useRef(false);
