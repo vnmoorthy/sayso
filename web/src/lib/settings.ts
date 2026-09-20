@@ -8,6 +8,8 @@ export interface Settings {
   /** Speak completed assistant turns with speechSynthesis when the server has no TTS. */
   browserTts: boolean;
   showHud: boolean;
+  /** Small Web Audio cues: connect chime, tool tick/thud, say-so tone. */
+  soundCues: boolean;
 }
 
 const KEY = 'sayso.settings.v1';
@@ -21,6 +23,7 @@ export const defaultSettings: Settings = {
   voice: null,
   browserTts: true,
   showHud: true,
+  soundCues: true,
 };
 
 export function loadSettings(): Settings {

@@ -28,7 +28,7 @@
   --animate-fade-in: fade-in 240ms ease-out both;
 }
 
-/* Keyframes live outside @theme so plain CSS (.caret, .orb-thinking) can use them too. */
+/* Keyframes live outside @theme so plain CSS (.caret, .orb-think) can use them too. */
 @keyframes caret {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
@@ -49,12 +49,17 @@
 @property --orb-a { syntax: "<color>"; inherits: true; initial-value: #f4f4f5; }
 @property --orb-b { syntax: "<color>"; inherits: true; initial-value: #c8ff3d; }
 @property --orb-c { syntax: "<color>"; inherits: true; initial-value: #3f4a2a; }
+/* Aurora hue tokens — same trick, so the background cross-fades with mood */
+@property --aura-a { syntax: "<color>"; inherits: true; initial-value: #c8ff3d; }
+@property --aura-b { syntax: "<color>"; inherits: true; initial-value: #8b7cff; }
 
 :root {
   color-scheme: dark;
   --orb-a: #f4f4f5;
   --orb-b: #c8ff3d;
   --orb-c: #3f4a2a;
+  --aura-a: #c8ff3d;
+  --aura-b: #8b7cff;
 }
 
 html, body, #root {
@@ -79,8 +84,8 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(900px 620px at 14% 24%, rgba(200, 255, 61, 0.07), transparent 62%),
-    radial-gradient(800px 520px at 86% 88%, rgba(139, 124, 255, 0.07), transparent 62%);
+    radial-gradient(900px 620px at 14% 24%, rgba(200, 255, 61, 0.05), transparent 62%),
+    radial-gradient(800px 520px at 86% 88%, rgba(139, 124, 255, 0.05), transparent 62%);
 }
 
 #root {
@@ -108,12 +113,60 @@ body::before {
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
+/* ---------------------------------------------------------------- aurora */
+/* Very slow, low-contrast colour fields behind the app. Transforms only —
+   no filters — so it composites for free. Sits below the panels (z -1
+   inside #root's stacking context). */
+
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  transition: --aura-a 1400ms ease, --aura-b 1400ms ease;
+}
+
+.aurora-blob {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+.aurora-1 {
+  width: min(70vw, 1000px); height: min(70vw, 1000px); left: -22vw; top: -30vw;
+  background: radial-gradient(circle, color-mix(in srgb, var(--aura-a) 13%, transparent) 0%, transparent 62%);
+  animation: aurora-1 42s ease-in-out infinite alternate;
+}
+.aurora-2 {
+  width: min(64vw, 920px); height: min(64vw, 920px); right: -24vw; bottom: -30vw;
+  background: radial-gradient(circle, color-mix(in srgb, var(--aura-b) 14%, transparent) 0%, transparent 62%);
+  animation: aurora-2 51s ease-in-out infinite alternate;
+}
+.aurora-3 {
+  width: min(46vw, 680px); height: min(46vw, 680px); left: 32vw; top: 22vh;
+  background: radial-gradient(circle, rgba(139, 124, 255, 0.07) 0%, transparent 62%);
+  animation: aurora-3 58s ease-in-out infinite alternate;
+}
+@keyframes aurora-1 {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(14vw, 10vh, 0) scale(1.18); }
+}
+@keyframes aurora-2 {
+  from { transform: translate3d(0, 0, 0) scale(1.1); }
+  to { transform: translate3d(-12vw, -14vh, 0) scale(0.92); }
+}
+@keyframes aurora-3 {
+  from { transform: translate3d(0, 0, 0) scale(0.9); }
+  to { transform: translate3d(-18vw, 16vh, 0) scale(1.2); }
+}
+
 /* ---------------------------------------------------------------- panels */
 
 .panel {
   border-radius: 1rem;
   border: 1px solid var(--color-line);
-  background: var(--color-surface);
+  /* a hair translucent so the aurora breathes through, without touching contrast */
+  background: rgba(17, 17, 20, 0.93);
   box-shadow: var(--shadow-soft);
 }
 
@@ -141,23 +194,86 @@ body::before {
   transition: --orb-a 900ms ease, --orb-b 900ms ease, --orb-c 900ms ease;
 }
 
-.orb-glow {
+/* wide, deep-hued field — grows when the bot speaks */
+.orb-aura {
   position: absolute;
-  inset: -34%;
+  inset: -58%;
   border-radius: 50%;
-  background: radial-gradient(circle, var(--orb-b) 0%, transparent 62%);
-  filter: blur(28px);
-  opacity: 0.35;
+  /* no filter: the gradient's own falloff is soft enough, and this is the largest layer */
+  background: radial-gradient(circle, color-mix(in srgb, var(--orb-c) 70%, transparent) 0%, transparent 58%);
+  opacity: 0.16;
+  pointer-events: none;
   will-change: transform, opacity;
 }
 
-.orb-ring {
+/* volumetric glow in the mood's mid colour */
+.orb-glow {
   position: absolute;
-  inset: -7%;
+  inset: -36%;
   border-radius: 50%;
-  border: 2px solid var(--orb-b);
-  opacity: 0;
+  background: radial-gradient(circle, var(--orb-b) 0%, transparent 62%);
+  filter: blur(28px);
+  opacity: 0.34;
+  pointer-events: none;
   will-change: transform, opacity;
+}
+
+/* breathing concentric halos */
+.orb-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--orb-b);
+  transform: scale(var(--s0));
+  opacity: var(--o0);
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: halo-breathe var(--dur, 6s) ease-in-out var(--delay, 0s) infinite;
+}
+.orb-halo-1 { --s0: 1.12; --s1: 1.19; --o0: 0.22; --o1: 0.09; --dur: 5.4s; }
+.orb-halo-2 { --s0: 1.25; --s1: 1.33; --o0: 0.13; --o1: 0.04; --dur: 7.2s; --delay: -2.3s; }
+.orb-halo-3 { --s0: 1.38; --s1: 1.48; --o0: 0.07; --o1: 0.02; --dur: 9.1s; --delay: -4.8s; }
+@keyframes halo-breathe {
+  0%, 100% { transform: scale(var(--s0)); opacity: var(--o0); }
+  50% { transform: scale(var(--s1)); opacity: var(--o1); }
+}
+
+/* live waveform / ripple layer (drawn in rAF from audio levels) */
+.orb-canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* rotating iridescent sheen while thinking — the core covers the centre,
+   so only the outer band shows */
+.orb-think {
+  position: absolute;
+  inset: -9%;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(139, 124, 255, 0) 30deg,
+    rgba(139, 124, 255, 0.85) 85deg,
+    rgba(200, 255, 61, 0.6) 140deg,
+    rgba(94, 176, 255, 0.85) 200deg,
+    rgba(139, 124, 255, 0) 250deg,
+    transparent 360deg
+  );
+  filter: blur(6px);
+  transition: opacity 600ms ease;
+  animation: spin-slow 3.2s linear infinite;
+  animation-play-state: paused;
+  will-change: transform;
+}
+.orb-think.is-on {
+  opacity: 0.95;
+  animation-play-state: running;
 }
 
 .orb-core {
@@ -186,6 +302,10 @@ body::before {
 .orb-blob-a { background: var(--orb-b); top: -12%; left: -6%; animation: orb-drift-a 9s ease-in-out infinite; }
 .orb-blob-b { background: var(--orb-c); bottom: -18%; right: -10%; animation: orb-drift-b 11s ease-in-out infinite; }
 .orb-blob-c { background: var(--orb-a); width: 40%; height: 40%; top: 18%; right: 8%; opacity: 0.55; animation: orb-drift-c 7s ease-in-out infinite; }
+/* the blobs quicken when you speak */
+.orb-hearing .orb-blob-a { animation-duration: 3.6s; }
+.orb-hearing .orb-blob-b { animation-duration: 4.4s; }
+.orb-hearing .orb-blob-c { animation-duration: 2.8s; }
 
 .orb-sheen {
   position: absolute;
@@ -193,15 +313,6 @@ body::before {
   border-radius: 50%;
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 38%);
   pointer-events: none;
-}
-
-.orb-thinking {
-  position: absolute;
-  inset: -12%;
-  border-radius: 50%;
-  border: 2px dashed var(--color-violet);
-  opacity: 0.75;
-  animation: spin-slow 7s linear infinite;
 }
 
 .orb-idle .orb-core { animation: orb-breathe 4.5s ease-in-out infinite; }
@@ -223,6 +334,127 @@ body::before {
 @keyframes orb-drift-c {
   0%, 100% { transform: translate(0, 0) scale(1); }
   50% { transform: translate(-30%, 40%) scale(1.25); }
+}
+
+/* ---------------------------------------------------------------- captions & invitation */
+
+.caption {
+  font-size: 1.125rem;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+}
+.caption-word {
+  display: inline-block;
+  animation: word-in 340ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes word-in {
+  from { opacity: 0; transform: translateY(5px); filter: blur(3px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+/* a soft light sweeping across "Thinking…" */
+.shimmer {
+  background: linear-gradient(100deg, var(--color-muted) 0%, var(--color-text) 45%, var(--color-muted) 65%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.9s linear infinite;
+}
+@keyframes shimmer {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+/* ---------------------------------------------------------------- reveals */
+
+/* new action cards: slide in with a brief lime edge-glow */
+.card-arrive {
+  animation: card-arrive 1.3s ease-out both;
+}
+@keyframes card-arrive {
+  0% { box-shadow: 0 0 0 1px rgba(200, 255, 61, 0.6), 0 0 28px -4px rgba(200, 255, 61, 0.55); }
+  100% { box-shadow: 0 0 0 1px rgba(200, 255, 61, 0), 0 0 0 -4px rgba(200, 255, 61, 0); }
+}
+
+/* exit 0 — a green flash; failure — an amber ripple */
+.flash-ok {
+  animation: flash-ok 1.2s ease-out both;
+}
+@keyframes flash-ok {
+  0% { background-color: rgba(200, 255, 61, 0.16); box-shadow: 0 0 0 0 rgba(200, 255, 61, 0.5); }
+  100% { background-color: transparent; box-shadow: 0 0 0 12px rgba(200, 255, 61, 0); }
+}
+.flash-fail {
+  animation: flash-fail 1.5s ease-out both;
+}
+@keyframes flash-fail {
+  0% { background-color: rgba(255, 176, 32, 0.18); box-shadow: 0 0 0 0 rgba(255, 176, 32, 0.6); }
+  45% { box-shadow: 0 0 0 10px rgba(255, 176, 32, 0); }
+  50% { box-shadow: 0 0 0 0 rgba(255, 176, 32, 0.35); }
+  100% { background-color: transparent; box-shadow: 0 0 0 16px rgba(255, 176, 32, 0); }
+}
+
+/* terminal: new lines glow in; running blocks carry a slow scanline */
+.term-line {
+  animation: line-in 460ms ease-out both;
+}
+@keyframes line-in {
+  from { opacity: 0; transform: translateY(2px); text-shadow: 0 0 10px rgba(200, 255, 61, 0.55); }
+  60% { opacity: 1; }
+  to { opacity: 1; transform: none; text-shadow: 0 0 0 rgba(200, 255, 61, 0); }
+}
+.term-block {
+  position: relative;
+  border-radius: 0.5rem;
+  margin: 0 -0.375rem;
+  padding: 0.125rem 0.375rem;
+}
+.term-block.is-running::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(200, 255, 61, 0.07), transparent) 0 -64px / 100% 64px no-repeat;
+  animation: scan 2.4s linear infinite;
+}
+@keyframes scan {
+  to { background-position-y: calc(100% + 64px); }
+}
+
+/* the say-so card: an amber pulse ring that fades after a few beats */
+.sayso-pulse {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1.5px solid var(--color-amber);
+  pointer-events: none;
+  opacity: 0;
+  animation: sayso-pulse 1.7s ease-out 3;
+}
+@keyframes sayso-pulse {
+  0% { opacity: 0.85; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.045); }
+}
+
+/* the landing Connect button: a soft glow that breathes */
+.connect-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.875rem;
+  background: var(--color-lime);
+  filter: blur(16px);
+  opacity: 0.35;
+  pointer-events: none;
+  animation: connect-pulse 2.8s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+@keyframes connect-pulse {
+  0%, 100% { opacity: 0.28; transform: scale(0.94); }
+  50% { opacity: 0.6; transform: scale(1.06); }
 }
 
 /* ---------------------------------------------------------------- misc */
@@ -248,7 +480,14 @@ body::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .orb-blob, .orb-thinking, .orb-idle .orb-core { animation: none; }
+  .orb-blob, .orb-think, .orb-idle .orb-core, .orb-halo, .aurora-blob,
+  .connect-pulse, .term-block.is-running::after, .sayso-pulse, .shimmer {
+    animation: none;
+  }
+  .caption-word, .term-line, .card-arrive, .flash-ok, .flash-fail {
+    animation-duration: 0.01s;
+  }
+  .shimmer { color: var(--color-muted); background: none; }
 }
 
 /* ?mock=1&instant=1 — deterministic frame for headless screenshots */

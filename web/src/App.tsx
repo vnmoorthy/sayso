@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState, type CSSProperties } from 'react';
 import { ListTree, Mic, PanelsTopLeft } from 'lucide-react';
-import { assistantText, initialState, reducer } from './lib/store';
+import { assistantText, initialState, reducer, type ToolStatus } from './lib/store';
 import { loadSettings, saveSettings, type Settings } from './lib/settings';
+import { armCues, playCue, setCuesEnabled } from './lib/cues';
 import { PipecatSession, type SaysoSession } from './lib/pipecat';
 import { MockSession } from './lib/mock';
 import { INSTANT, MOCK } from './lib/flags';
 import { cx } from './lib/format';
 import { TopBar } from './components/TopBar';
 import { Landing } from './components/Landing';
+import { MOOD_COLORS } from './components/Orb';
 import { VoicePanel } from './components/VoicePanel';
 import { Workbench } from './components/Workbench';
 import { ActionsRail } from './components/ActionsRail';
@@ -175,6 +177,49 @@ export default function App() {
     if (confirmCount > 0) setMobileView('work');
   }, [confirmCount]);
 
+  // Sound cues (Web Audio, no assets). Unlocked by the first gesture; never in instant mode.
+  useEffect(() => {
+    armCues();
+  }, []);
+  useEffect(() => {
+    setCuesEnabled(settings.soundCues);
+  }, [settings.soundCues]);
+  const prevConnRef = useRef(state.connection);
+  useEffect(() => {
+    if (state.connection === 'connected' && prevConnRef.current !== 'connected') playCue('connect');
+    prevConnRef.current = state.connection;
+  }, [state.connection]);
+  const toolStatusRef = useRef<Map<string, ToolStatus>>(new Map());
+  useEffect(() => {
+    const seen = toolStatusRef.current;
+    const tools = Object.values(state.tools);
+    if (tools.length === 0) {
+      seen.clear();
+      return;
+    }
+    for (const t of tools) {
+      const was = seen.get(t.id);
+      if (was && was !== t.status) {
+        if (t.status === 'ok') playCue('tick');
+        else if (t.status === 'failed') playCue('thud');
+      }
+      seen.set(t.id, t.status);
+    }
+  }, [state.tools]);
+  const confirmSeenRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    for (const c of state.confirms) {
+      if (confirmSeenRef.current.has(c.id)) continue;
+      confirmSeenRef.current.add(c.id);
+      playCue('sayso');
+    }
+  }, [state.confirms]);
+
+  // Mood-tinted aurora behind everything.
+  const auroraMood = state.emotion?.mood ?? 'neutral';
+  const [, auraA, auraB] = MOOD_COLORS[auroraMood] ?? MOOD_COLORS.neutral;
+  const auroraStyle = { '--aura-a': auraA, '--aura-b': auraB } as CSSProperties;
+
   const showLanding = !state.mock && state.connection !== 'connected' && state.turns.length === 0;
   const runningActions = Object.values(state.tools).filter((t) => t.status === 'running').length;
 
@@ -186,6 +231,11 @@ export default function App() {
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden bg-transparent text-text">
+      <div className="aurora" aria-hidden style={auroraStyle}>
+        <span className="aurora-blob aurora-1" />
+        <span className="aurora-blob aurora-2" />
+        <span className="aurora-blob aurora-3" />
+      </div>
       <TopBar
         state={state}
         settings={settings}

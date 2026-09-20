@@ -6,7 +6,7 @@ import { cx, fmtMs, summarizeArgs, truncate } from '../lib/format';
 import { EmotionBadge } from './EmotionBadge';
 import { StatusDot } from './ui';
 
-function ToolChip({ tool, id }: { tool: ToolRecord | undefined; id: string }) {
+export function ToolChip({ tool, id }: { tool: ToolRecord | undefined; id: string }) {
   if (!tool) {
     return (
       <div className="mono inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-[11px] text-dim">

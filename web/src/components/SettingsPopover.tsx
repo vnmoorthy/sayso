@@ -180,6 +180,11 @@ export function SettingsPopover({
                   onChange={(v) => onChange({ browserTts: v })}
                 />
                 <Toggle label="Show latency HUD" checked={settings.showHud} onChange={(v) => onChange({ showHud: v })} />
+                <Toggle
+                  label="Sound cues — connect chime, tool tick, say-so tone"
+                  checked={settings.soundCues}
+                  onChange={(v) => onChange({ soundCues: v })}
+                />
               </div>
             </div>
 

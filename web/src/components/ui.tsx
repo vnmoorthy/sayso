@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { LoaderCircle } from 'lucide-react';
 import { cx } from '../lib/format';
 import type { ToolStatus } from '../lib/store';
@@ -126,4 +126,23 @@ export function EmptyState({
       {body && <div className="max-w-xs text-xs leading-relaxed text-muted">{body}</div>}
     </div>
   );
+}
+
+/**
+ * Returns the finished status ('ok' | 'failed') for ~1.4s right after a
+ * running→finished transition, so a card can flash once. Null otherwise.
+ */
+export function useStatusFlash(status: ToolStatus): ToolStatus | null {
+  const prev = useRef<ToolStatus>(status);
+  const [flash, setFlash] = useState<ToolStatus | null>(null);
+  useEffect(() => {
+    const was = prev.current;
+    prev.current = status;
+    if (was === 'running' && status !== 'running') {
+      setFlash(status);
+      const t = window.setTimeout(() => setFlash(null), 1500);
+      return () => window.clearTimeout(t);
+    }
+  }, [status]);
+  return flash;
 }

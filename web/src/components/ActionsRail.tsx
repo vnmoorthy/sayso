@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import type { ActionEntry, GithubEvent, ToolRecord } from '../lib/store';
 import { cx, fmtMs, summarizeArgs, toolLabel } from '../lib/format';
-import { EmptyState, StatusDot } from './ui';
+import { EmptyState, StatusDot, useStatusFlash } from './ui';
 
 const ICONS: Record<string, LucideIcon> = {
   run_shell: Terminal,
@@ -38,13 +38,16 @@ const ICONS: Record<string, LucideIcon> = {
 function ToolCard({ tool }: { tool: ToolRecord }) {
   const Icon = ICONS[tool.name] ?? Wrench;
   const summary = summarizeArgs(tool.name, tool.args);
+  const flash = useStatusFlash(tool.status);
   return (
     <motion.div
-      initial={{ opacity: 0, x: 10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.2 }}
+      initial={{ opacity: 0, x: 16, scale: 0.98 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      transition={{ duration: 0.34, ease: [0.2, 0.7, 0.2, 1] }}
       className={cx(
-        'rounded-xl border p-2.5',
+        'card-arrive rounded-xl border p-2.5',
+        flash === 'ok' && 'flash-ok',
+        flash === 'failed' && 'flash-fail',
         tool.status === 'failed'
           ? 'border-danger/30 bg-danger/5'
           : tool.status === 'running'
@@ -96,10 +99,10 @@ function GithubCard({ ev }: { ev: GithubEvent }) {
       href={ev.url}
       target="_blank"
       rel="noreferrer noopener"
-      initial={{ opacity: 0, x: 10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.2 }}
-      className="group block rounded-xl border border-line bg-surface-2 p-2.5 transition hover:border-lime/40"
+      initial={{ opacity: 0, x: 16, scale: 0.98 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      transition={{ duration: 0.34, ease: [0.2, 0.7, 0.2, 1] }}
+      className="card-arrive group block rounded-xl border border-line bg-surface-2 p-2.5 transition hover:border-lime/40"
     >
       <div className="flex items-start gap-2.5">
         <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/8 text-text">

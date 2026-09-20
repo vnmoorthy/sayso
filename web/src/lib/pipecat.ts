@@ -148,11 +148,12 @@ export class PipecatSession implements SaysoSession {
     resetLevels();
     if (this.audio) this.audio.srcObject = null;
     if (client) {
-      try {
-        await client.disconnect();
-      } catch {
-        // already gone
-      }
+      // A dead peer (e.g. the server restarted) can make disconnect() hang on ICE
+      // teardown; never let that block a fresh connect.
+      await Promise.race([
+        client.disconnect().catch(() => undefined),
+        new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+      ]);
     }
   }
 

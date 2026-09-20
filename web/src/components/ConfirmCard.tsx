@@ -19,14 +19,15 @@ export function ConfirmCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -8, scale: 0.98 }}
+      initial={{ opacity: 0, y: -12, scale: 0.94 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -6, scale: 0.98 }}
-      transition={{ duration: 0.2 }}
-      className="relative overflow-hidden rounded-2xl border border-amber/50 bg-amber/8 p-4 shadow-[0_0_0_1px_rgba(255,176,32,0.12),0_24px_60px_-30px_rgba(255,176,32,0.55)]"
+      transition={{ type: 'spring', stiffness: 380, damping: 26 }}
+      className="relative rounded-2xl border border-amber/50 bg-amber/8 p-4 shadow-[0_0_0_1px_rgba(255,176,32,0.12),0_24px_60px_-30px_rgba(255,176,32,0.55)]"
     >
+      <span aria-hidden className="sayso-pulse" />
       <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber/15 text-amber">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber/15 text-amber shadow-[0_0_18px_-2px_rgba(255,176,32,0.55)]">
           <ShieldCheck className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">

@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react';
 import { CircleStop, Terminal as TerminalIcon, Trash2 } from 'lucide-react';
 import type { ProcessInfo, TerminalBlock } from '../lib/store';
 import { cx, fmtMs } from '../lib/format';
-import { EmptyState, StatusDot } from './ui';
+import { EmptyState, StatusDot, useStatusFlash } from './ui';
 
 function Block({ block }: { block: TerminalBlock }) {
+  const flash = useStatusFlash(block.status);
   const exit =
     block.status === 'running'
       ? 'running'
@@ -12,7 +13,14 @@ function Block({ block }: { block: TerminalBlock }) {
         ? `exit ${block.exitCode ?? 0}`
         : `exit ${block.exitCode ?? 1}`;
   return (
-    <div className="mb-3.5 last:mb-0">
+    <div
+      className={cx(
+        'term-block mb-3.5 last:mb-0',
+        block.status === 'running' && 'is-running',
+        flash === 'ok' && 'flash-ok',
+        flash === 'failed' && 'flash-fail',
+      )}
+    >
       <div className="flex items-start gap-2">
         <span className="shrink-0 font-semibold text-lime">$</span>
         <span className="min-w-0 flex-1 break-all whitespace-pre-wrap text-text">{block.command || block.name}</span>
@@ -28,7 +36,7 @@ function Block({ block }: { block: TerminalBlock }) {
           {block.lines.map((l, i) => (
             <div
               key={i}
-              className={cx('break-words whitespace-pre-wrap', l.stream === 'stderr' ? 'text-amber' : 'text-muted')}
+              className={cx('term-line break-words whitespace-pre-wrap', l.stream === 'stderr' ? 'text-amber' : 'text-muted')}
             >
               {l.text || ' '}
             </div>

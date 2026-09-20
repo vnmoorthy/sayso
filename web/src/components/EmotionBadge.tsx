@@ -14,7 +14,7 @@ const MOOD_TEXT: Record<Mood, string> = {
   sad: 'text-ice',
 };
 
-const MOOD_BG: Record<Mood, string> = {
+export const MOOD_BG: Record<Mood, string> = {
   neutral: 'bg-lime',
   excited: 'bg-lime',
   happy: 'bg-amber',
