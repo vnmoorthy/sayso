@@ -71,7 +71,9 @@ export default function App() {
   }, [session]);
 
   const toggleMic = useCallback(() => {
-    session.enableMic(!stateRef.current.micEnabled);
+    const enable = !stateRef.current.micEnabled;
+    if (enable) session.enableMic(true);
+    else window.setTimeout(() => session.enableMic(false), 1200); // let the turn close first
   }, [session]);
 
   const send = useCallback(
@@ -141,7 +143,11 @@ export default function App() {
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.key === ' ' && pttRef.current) {
         pttRef.current = false;
-        session.enableMic(false);
+        // Keep the mic open briefly after release so the server hears the silence that
+        // closes the turn (cutting the track mid-word leaves the turn open).
+        window.setTimeout(() => {
+          if (!pttRef.current) session.enableMic(false);
+        }, 1200);
       }
     };
     window.addEventListener('keydown', onKey);

@@ -14,7 +14,7 @@ export interface Settings {
   pushToTalk: boolean;
 }
 
-const KEY = 'sayso.settings.v1';
+const KEY = 'sayso.settings.v2';
 
 export const DEFAULT_SERVER_URL: string =
   (import.meta.env.VITE_SAYSO_SERVER_URL as string | undefined) ?? 'http://localhost:7860';
@@ -26,7 +26,7 @@ export const defaultSettings: Settings = {
   browserTts: true,
   showHud: true,
   soundCues: true,
-  pushToTalk: false,
+  pushToTalk: true,
 };
 
 export function loadSettings(): Settings {
