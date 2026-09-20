@@ -208,9 +208,10 @@ export class PipecatSession implements SaysoSession {
       return;
     }
     try {
-      // append-to-context runs the model directly; sendText's interrupt+flush path can stall
-      // when the bot was mid-utterance, leaving the message undelivered.
-      await client.appendToContext({ role: 'user', content: text, run_immediately: true });
+      // A custom "say" message: the server adds the text to the context and runs the model
+      // directly (same path as the greeting). The RTVI text paths can stall behind an open
+      // user turn after a clipped utterance.
+      client.sendClientMessage('say', { text });
     } catch (err) {
       this.dispatch({ type: 'toast', level: 'error', text: describeError(err, '') });
     }

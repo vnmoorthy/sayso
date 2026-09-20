@@ -440,6 +440,14 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
                     await rtvi_processor.push_frame(TTSUpdateSettingsFrame(delta=type(target).Settings(voice=voice), service=target))
                     await bus.emit({"type": "notice", "level": "info", "text": "Voice updated"})
                     await send_status()
+            elif mtype == "say":
+                # Typed input: add it straight to the context and run the model, exactly like
+                # the greeting does. This bypasses the user-turn machinery, which can hold
+                # runs hostage after a clipped turn (mute mid-sentence, stray room audio).
+                text = str(data.get("text", "")).strip()
+                if text:
+                    context.add_message({"role": "user", "content": text})
+                    await task.queue_frames([LLMRunFrame()])
             elif mtype == "get_status":
                 await send_status()
             elif mtype == "stop_all":

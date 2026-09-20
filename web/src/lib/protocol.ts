@@ -54,8 +54,8 @@ export type ClientMessage =
   | { type: 'reset_workspace'; data: Record<string, never> }
   | { type: 'stop_all'; data: Record<string, never> };
 
-export type ClientMessageType = ClientMessage['type'];
-export type ClientMessageData<T extends ClientMessageType> = Extract<ClientMessage, { type: T }>['data'];
+export type ClientMessageType = 'say' | ClientMessage['type'];
+export type ClientMessageData<T extends ClientMessageType> = T extends 'say' ? { text: string } : Extract<ClientMessage, { type: T }>['data'];
 
 const SERVER_MESSAGE_TYPES: ReadonlySet<string> = new Set<ServerMessageType>([
   'status',

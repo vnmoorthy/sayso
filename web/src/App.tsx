@@ -73,7 +73,7 @@ export default function App() {
   const toggleMic = useCallback(() => {
     const enable = !stateRef.current.micEnabled;
     if (enable) session.enableMic(true);
-    else window.setTimeout(() => session.enableMic(false), 1200); // let the turn close first
+    else window.setTimeout(() => session.enableMic(false), 3500); // let the turn close first
   }, [session]);
 
   const send = useCallback(
@@ -147,7 +147,7 @@ export default function App() {
         // closes the turn (cutting the track mid-word leaves the turn open).
         window.setTimeout(() => {
           if (!pttRef.current) session.enableMic(false);
-        }, 1200);
+        }, 3500); // smart-turn needs ~3 s of silence to close the turn
       }
     };
     window.addEventListener('keydown', onKey);
