@@ -219,7 +219,17 @@ async def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--server", default="http://localhost:7860")
     ap.add_argument("--wavs", default=str(Path(__file__).resolve().parent.parent / "tests" / "speech"))
+    ap.add_argument("--script", help="text file: one utterance per line, optional '| tool1,tool2' expected tools")
+    ap.add_argument("--wait", type=float, default=3.0, help="seconds of quiet that end a turn")
     args = ap.parse_args()
+    global UTTERANCES
+    if args.script:
+        lines = [l.strip() for l in Path(args.script).read_text().splitlines() if l.strip() and not l.startswith("#")]
+        UTTERANCES = []
+        for line in lines:
+            text, _, exp = line.partition("|")
+            UTTERANCES.append((text.strip(), {t.strip() for t in exp.split(",") if t.strip()}))
+        args.wavs = str(Path(args.script).with_suffix("")) + "_speech"
     wavs = ensure_wavs(Path(args.wavs))
 
     s = Session(args.server)
@@ -236,10 +246,10 @@ async def main() -> int:
         dur = s.mic.say(wav)
         await asyncio.sleep(dur + 0.5)
         await s.wait_transcript()
-        await s.quiesce(idle=3.0, limit=45)
+        await s.quiesce(idle=args.wait, limit=90)
         r = summarize(s.take())
         heard = overlap(text, r["transcript"])
-        tools_ok = expected.issubset(set(r["tools"]))
+        tools_ok = expected.issubset(set(r["tools"])) if expected else True
         spoke = s.voiced_frames > voiced_before
         # The tools are the ground truth; the transcript is informational (short
         # clips can lose their first syllable to turn detection).
@@ -248,7 +258,7 @@ async def main() -> int:
         print(f"\n{'✅' if ok else '❌'} said:  {text}")
         print(f"   heard: {r['transcript']!r}  (word overlap {heard:.0%})")
         print(f"   tools: {r['tools']}  expected ⊇ {sorted(expected)} → {'ok' if tools_ok else 'MISSING'}")
-        print(f"   reply: {r['bot'][:110]!r}  · TTFT {r['ttft_ms']} ms · voice audio {'✓' if spoke else '— (no server TTS)'}")
+        print(f"   reply: {r['bot'][:300]!r}  · TTFT {r['ttft_ms']} ms · voice audio {'✓' if spoke else '— (no server TTS)'}")
 
     await s.pc.close()
     print(f"\n{'ALL PASS' if failures == 0 else f'{failures} FAILED'} · bot audio frames: {s.audio_frames} (voiced {s.voiced_frames})")

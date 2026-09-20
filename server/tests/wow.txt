@@ -1,0 +1,8 @@
+# Sayso stage script — rehearsed with the real model
+Build me a landing page for a coffee shop called Lunar Grounds with a dark theme and a menu of five drinks, serve it on port 8000 and open it in the browser
+Make the headline bigger and gold
+Now go to Hacker News, open the top story, and tell me in one sentence what it is about
+Search for the best coffee in San Francisco and read me the top three results
+Ugh, you are so slow. Just tell me what time it is
+Delete the lunar grounds folder
+Yes, go ahead
